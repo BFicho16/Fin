@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 // Simple in-memory cache to avoid repeated fetches
 const cache = new Map<string, any>();
