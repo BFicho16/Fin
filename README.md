@@ -1,66 +1,178 @@
-# Deep Research Assistant with Mastra
+# Health & Wellness Agent Platform with Mastra
 
-This project implements an advanced AI deep research assistant using Mastra's workflows and agent capabilities. It creates an interactive, human-in-the-loop research system that allows users to explore topics, evaluate results, and generate comprehensive reports.
+This project implements a personalized AI health and wellness assistant using Mastra's workflows and agent capabilities. It features a modern Next.js frontend with Supabase authentication, creating an interactive, user-specific health coaching system that allows users to share their health information, receive personalized wellness plans, and track their progress toward health goals.
 
-## Implementation Approach
+## 🏗️ Architecture
 
-The research assistant is built on Mastra's workflows architecture for better orchestration and human interaction:
+The application combines a Next.js frontend with Mastra's powerful backend workflows:
 
-1. **Workflow-Based Architecture**:
-   - `mainWorkflow`: Coordinates the entire research process
-   - `researchWorkflow`: Handles the core research functionality with suspend/resume for user interaction
-   - Human-in-the-loop experience with approval gates and iterative research
+### Frontend (Next.js 15 + Supabase Auth)
+- **Modern Web Interface**: Built with Next.js App Router and TypeScript
+- **User Authentication**: Email/password authentication with Supabase
+- **Protected Routes**: Dashboard and user-specific features
+- **Responsive Design**: Clean UI with Tailwind CSS
 
-2. **Research Agent with Custom Tools**:
-   - `webSearchTool`: Searches the web using the Exa API for relevant information
-   - `evaluateResultTool`: Assesses result relevance to the research topic
-   - `extractLearningsTool`: Identifies key learnings and generates follow-up questions
+### Backend (Mastra Workflows)
+- **Workflow-Based Architecture**: 
+  - `healthDataCollectionWorkflow`: Interactive user onboarding and data collection
+  - `researchWorkflow`: Health-focused research functionality with suspend/resume
+  - `generateReportWorkflow`: Transforms research into personalized wellness plans
+- **Health-Focused Agents with Custom Tools**:
+  - `healthWellnessAgent`: Primary conversational agent with working memory
+  - `researchAgent`: Searches for evidence-based health information
+  - `evaluationAgent`: Assesses health source credibility and safety
+  - `learningExtractionAgent`: Extracts actionable wellness insights
+  - `reportAgent`: Generates structured wellness plans
+- **Database Tools**: CRUD operations for health profiles, goals, habits, and plans
+- **User-Specific Data**: Each user gets their own Mastra instance and health database
 
-3. **Report Generation**:
-   - `reportAgent`: Transforms research findings into comprehensive markdown reports
-   - Returns report content directly after user approval of research quality
+## 🚀 Getting Started
 
-## Key Benefits of Mastra vNext Implementation
+### Prerequisites
+- Node.js 20.9.0 or higher
+- Supabase project with authentication enabled
+- Google Gemini API key
+- Exa API key
 
-1. **True Human-in-the-Loop Research**: Users can guide the research process, approve findings, and iterate when needed
+### Installation
 
-2. **Suspend/Resume Capabilities**: The workflow can pause at strategic points to collect user input and feedback
+1. **Clone and install dependencies**:
+```bash
+git clone <repository-url>
+cd Fin
+npm install
+```
 
-3. **Structured Workflow**: Clear separation between research, approval, and report generation phases
+2. **Set up environment variables**:
+Create a `.env` file with:
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
 
-4. **Resilient Operation**: Robust error handling and fallback mechanisms when web searches fail
+# AI API Keys
+GOOGLE_GENERATIVE_AI_API_KEY="your-google-gemini-api-key"
+EXA_API_KEY="your-exa-api-key"
+MODEL="gemini-2.5-flash-lite"
+```
 
-5. **Modular Design**: Each component (workflows, agents, tools) can be maintained and upgraded independently
+3. **Set up Supabase database**:
+Run the SQL migration in your Supabase SQL editor:
+```sql
+-- Copy the contents from supabase/migrations/001_create_health_tables.sql
+-- This creates the health-related tables and RLS policies
+```
 
-## How to Use
+### Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Run the research assistant
+# Start the Next.js frontend (port 3000)
 npm run dev
+
+# Start the Mastra backend (separate terminal, port 8080)
+npm run mastra:dev
 ```
 
-Follow the interactive prompts:
+### Production Build
 
-1. Enter your research topic
-2. Review the research findings
-3. Approve or reject the research results
-4. If approved, a comprehensive report will be returned as output
+```bash
+# Build the Next.js application
+npm run build
 
-## Required Environment Variables
-
-Create a `.env` file with:
-
-```
-OPENAI_API_KEY=""
-EXA_API_KEY="your-exa-api-key"
+# Start production server
+npm start
 ```
 
-## Required Dependencies
+## 🔐 Authentication Flow
 
-- `@mastra/core`: Core Mastra functionality with vNext workflows
-- `@ai-sdk/openai`: OpenAI models integration
-- `exa-js`: Exa API client for web search
-- `zod`: Schema definition and validation for workflows
+1. **Landing Page** (`/`): Shows login and signup links
+2. **User Registration** (`/signup`): Create account with email/password
+3. **User Login** (`/login`): Authenticate with existing credentials
+4. **Protected Dashboard** (`/dashboard`): Access research features (requires authentication)
+
+## 🎯 Key Features
+
+### User Management
+- **Email/Password Authentication**: Secure user registration and login
+- **Session Management**: Persistent authentication with Supabase cookies
+- **User-Specific Data**: Each user gets isolated Mastra instances and databases
+- **Route Protection**: Middleware-based authentication guards
+
+### Health & Wellness Capabilities
+- **Conversational Data Collection**: Natural conversation to gather health information
+- **Personalized Wellness Plans**: Evidence-based plans tailored to user goals and preferences
+- **Health Research Integration**: Real-time search for credible health information
+- **Goal Tracking**: Set, monitor, and track progress toward health objectives
+- **Working Memory**: Persistent user context across conversations
+- **Plan Approval System**: Review and approve/reject generated wellness plans
+
+### Technical Features
+- **Modern Stack**: Next.js 15, TypeScript, Tailwind CSS
+- **Database Integration**: Supabase with Row Level Security (RLS)
+- **API Routes**: RESTful endpoints for Mastra workflow execution
+- **Error Handling**: Robust error handling and user feedback
+- **Build Optimization**: Optimized production builds with proper bundling
+
+## 📁 Project Structure
+
+```
+Fin/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── (dashboard)/       # Protected user dashboard
+│   │   ├── api/               # API routes
+│   │   └── globals.css        # Global styles
+│   ├── components/            # Reusable React components
+│   ├── lib/
+│   │   └── supabase/          # Supabase client utilities
+│   └── mastra/                # Mastra backend
+│       ├── agents/            # AI agents
+│       ├── tools/             # Custom tools
+│       └── workflows/         # Workflow definitions
+├── supabase/
+│   └── migrations/            # Database migrations
+├── next.config.js             # Next.js configuration
+├── tailwind.config.ts         # Tailwind CSS configuration
+└── middleware.ts              # Authentication middleware
+```
+
+## 🔧 API Endpoints
+
+- **`/api/auth/callback`**: Handles Supabase authentication callbacks
+- **`/api/mastra/[...path]`**: Proxies requests to Mastra workflows with user context
+
+## 🛡️ Security Features
+
+- **Row Level Security (RLS)**: Database-level user data isolation
+- **Authentication Middleware**: Route protection at the edge
+- **User Context Validation**: All API requests verify user authentication
+- **Environment Variable Protection**: Secure API key management
+
+## 🚧 Future Development
+
+The health and wellness platform is ready for:
+
+- **Routine Tracking**: Interactive daily/weekly routine checklists with progress visualization
+- **Progress Analytics**: Detailed analytics and insights on goal achievement
+- **Health Metrics Integration**: Integration with fitness trackers and health devices
+- **Community Features**: Sharing wellness plans and progress with friends
+- **Advanced AI Features**: Voice interaction and image analysis for health insights
+
+## 📚 Documentation
+
+- [Supabase Authentication Setup](AUTH_SETUP.md) - Detailed setup instructions
+- [Mastra Documentation](https://mastra.ai/docs) - Backend workflow documentation
+- [Next.js Documentation](https://nextjs.org/docs) - Frontend framework documentation
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+Apache-2.0

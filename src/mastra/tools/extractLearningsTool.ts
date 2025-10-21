@@ -36,12 +36,7 @@ export const extractLearningsTool = createTool({
             - followUpQuestions: array of up to 1 follow-up question for deeper research`,
           },
         ],
-        {
-          experimental_output: z.object({
-            learning: z.string(),
-            followUpQuestions: z.array(z.string()).max(1),
-          }),
-        },
+        {}
       );
 
       console.log('Learning extraction response:', response.object);

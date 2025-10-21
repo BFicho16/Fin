@@ -2,7 +2,7 @@ import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { researchWorkflow } from './researchWorkflow';
 import { z } from 'zod';
 
-// Map research output to report input and handle conditional logic
+// Map research output to wellness plan input and handle conditional logic
 const processResearchResultStep = createStep({
   id: 'process-research-result',
   inputSchema: z.object({
@@ -10,7 +10,7 @@ const processResearchResultStep = createStep({
     researchData: z.any(),
   }),
   outputSchema: z.object({
-    report: z.string().optional(),
+    wellnessPlan: z.string().optional(),
     completed: z.boolean(),
   }),
   execute: async ({ inputData, mastra }) => {
@@ -22,33 +22,43 @@ const processResearchResultStep = createStep({
       return { completed: false };
     }
 
-    // If approved, generate report
+    // If approved, generate wellness plan
     try {
-      console.log('Generating report...');
-      const agent = mastra.getAgent('reportAgent');
+      console.log('Generating wellness plan...');
+      const agent = mastra.getAgent('reportAgent'); // This is now the Wellness Plan Generator
       const response = await agent.generate([
         {
           role: 'user',
-          content: `Generate a report based on this research: ${JSON.stringify(inputData.researchData)}`,
+          content: `Generate a personalized wellness plan based on this health research: ${JSON.stringify(inputData.researchData)}. 
+
+Create a comprehensive plan that includes:
+- Executive summary with key objectives
+- Detailed routines (exercise, nutrition, lifestyle)
+- Implementation timeline and milestones
+- Safety considerations and contraindications
+- Progress tracking recommendations
+- Modification guidelines
+
+Focus on creating practical, evidence-based recommendations that are safe and sustainable.`,
         },
       ]);
 
-      console.log('Report generated successfully!');
-      return { report: response.text, completed: true };
+      console.log('Wellness plan generated successfully!');
+      return { wellnessPlan: response.text, completed: true };
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error generating wellness plan:', error);
       return { completed: false };
     }
   },
 });
 
-// Create the report generation workflow that iteratively researches and generates reports
+// Create the wellness plan generation workflow that iteratively researches and generates plans
 export const generateReportWorkflow = createWorkflow({
-  id: 'generate-report-workflow',
+  id: 'generate-wellness-plan-workflow',
   steps: [researchWorkflow, processResearchResultStep],
   inputSchema: z.object({}),
   outputSchema: z.object({
-    report: z.string().optional(),
+    wellnessPlan: z.string().optional(),
     completed: z.boolean(),
   }),
 });

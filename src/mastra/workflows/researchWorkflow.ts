@@ -1,22 +1,32 @@
 import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 
-// Step 1: Get user query
+// Step 1: Get user health research query
 const getUserQueryStep = createStep({
   id: 'get-user-query',
   inputSchema: z.object({}),
   outputSchema: z.object({
     query: z.string(),
+    userContext: z.object({
+      goals: z.array(z.string()).optional(),
+      currentHabits: z.array(z.string()).optional(),
+      preferences: z.any().optional(),
+    }),
   }),
   resumeSchema: z.object({
     query: z.string(),
+    userContext: z.object({
+      goals: z.array(z.string()).optional(),
+      currentHabits: z.array(z.string()).optional(),
+      preferences: z.any().optional(),
+    }),
   }),
   suspendSchema: z.object({
     message: z.object({
       query: z.string(),
     }),
   }),
-  execute: async ({ resumeData, suspend }) => {
+  execute: async ({ resumeData, suspend, mastra }) => {
     if (resumeData) {
       return {
         ...resumeData,
@@ -24,14 +34,22 @@ const getUserQueryStep = createStep({
       };
     }
 
+    // Get user context from the health wellness agent's memory
+    const agent = mastra.getAgent('healthWellnessAgent');
+    
     await suspend({
       message: {
-        query: 'What would you like to research?',
+        query: 'What health or wellness topic would you like me to research for your personalized plan? For example: "best exercises for weight loss" or "nutrition for muscle building"',
       },
     });
 
     return {
       query: '',
+      userContext: {
+        goals: [],
+        currentHabits: [],
+        preferences: {},
+      },
     };
   },
 });
@@ -51,12 +69,13 @@ const researchStep = createStep({
 
     try {
       const agent = mastra.getAgent('researchAgent');
-      const researchPrompt = `Research the following topic thoroughly using the two-phase process: "${query}".
+      const researchPrompt = `Research the following health and wellness topic thoroughly using the two-phase process: "${query}".
 
-      Phase 1: Search for 2-3 initial queries about this topic
+      Focus on evidence-based health information, safety considerations, and practical implementation.
+      Phase 1: Search for 2-3 initial queries about this health topic
       Phase 2: Search for follow-up questions from the learnings (then STOP)
 
-      Return findings in JSON format with queries, searchResults, learnings, completedQueries, and phase.`;
+      Return findings in JSON format with queries, searchResults, learnings, completedQueries, phase, sourceCredibility, and safetyNotes.`;
 
       const result = await agent.generate(
         [
@@ -67,25 +86,6 @@ const researchStep = createStep({
         ],
         {
           maxSteps: 15,
-          experimental_output: z.object({
-            queries: z.array(z.string()),
-            searchResults: z.array(
-              z.object({
-                title: z.string(),
-                url: z.string(),
-                relevance: z.string(),
-              }),
-            ),
-            learnings: z.array(
-              z.object({
-                learning: z.string(),
-                followUpQuestions: z.array(z.string()),
-                source: z.string(),
-              }),
-            ),
-            completedQueries: z.array(z.string()),
-            phase: z.string().optional(),
-          }),
         },
       );
 
