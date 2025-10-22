@@ -18,7 +18,9 @@ export interface RealtimeCallbacks {
   onExercisesUpdate?: (data: any) => void;
   onSupplementsUpdate?: (data: any) => void;
   onGoalsUpdate?: (data: any) => void;
-  onPlansUpdate?: (data: any) => void;
+  onRoutinesUpdate?: (data: any) => void;
+  onRoutineItemsUpdate?: (data: any) => void;
+  onRoutineCompletionsUpdate?: (data: any) => void;
   onProfileUpdate?: (data: any) => void;
 }
 
@@ -61,7 +63,9 @@ export function useHealthDataRealtime(userId: string, callbacks: RealtimeCallbac
     subscribeToTable('exercises', callbacks.onExercisesUpdate);
     subscribeToTable('supplements', callbacks.onSupplementsUpdate);
     subscribeToTable('goals', callbacks.onGoalsUpdate);
-    subscribeToTable('wellness_plans', callbacks.onPlansUpdate);
+    subscribeToTable('user_routines', callbacks.onRoutinesUpdate);
+    subscribeToTable('routine_items', callbacks.onRoutineItemsUpdate);
+    subscribeToTable('routine_completions', callbacks.onRoutineCompletionsUpdate);
     subscribeToTable('user_profiles', callbacks.onProfileUpdate);
 
     // Cleanup function
@@ -135,3 +139,4 @@ export function createDebouncedCallback<T extends any[]>(
 export function isRelevantUpdate(payload: any, userId: string): boolean {
   return payload?.new?.user_id === userId || payload?.old?.user_id === userId;
 }
+

@@ -117,8 +117,8 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Activity className="h-4 w-4" />
           Log Activity
         </CardTitle>
       </CardHeader>
@@ -126,32 +126,32 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
         <Tabs defaultValue="metrics" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="metrics" className="flex items-center gap-1">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Metrics</span>
+              <Activity className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Metrics</span>
             </TabsTrigger>
             <TabsTrigger value="meals" className="flex items-center gap-1">
-              <Utensils className="h-4 w-4" />
-              <span className="hidden sm:inline">Meals</span>
+              <Utensils className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Meals</span>
             </TabsTrigger>
             <TabsTrigger value="steps" className="flex items-center gap-1">
-              <Footprints className="h-4 w-4" />
-              <span className="hidden sm:inline">Steps</span>
+              <Footprints className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Steps</span>
             </TabsTrigger>
             <TabsTrigger value="exercise" className="flex items-center gap-1">
-              <Dumbbell className="h-4 w-4" />
-              <span className="hidden sm:inline">Exercise</span>
+              <Dumbbell className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Exercise</span>
             </TabsTrigger>
             <TabsTrigger value="supplements" className="flex items-center gap-1">
-              <Pill className="h-4 w-4" />
-              <span className="hidden sm:inline">Supplements</span>
+              <Pill className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Supplements</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Health Metrics Tab */}
-          <TabsContent value="metrics" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="metrics" className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Metric Type</label>
+                <label className="text-xs font-medium">Metric Type</label>
                 <Select value={healthMetric.metric_type} onValueChange={(value) => setHealthMetric(prev => ({ ...prev, metric_type: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -167,7 +167,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Unit</label>
+                <label className="text-xs font-medium">Unit</label>
                 <Select value={healthMetric.unit} onValueChange={(value) => setHealthMetric(prev => ({ ...prev, unit: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -183,7 +183,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Value</label>
+              <label className="text-xs font-medium">Value</label>
               <Input
                 type="number"
                 step="0.1"
@@ -193,12 +193,12 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Notes (optional)</label>
+              <label className="text-xs font-medium">Notes (optional)</label>
               <Textarea
                 value={healthMetric.notes}
                 onChange={(e) => setHealthMetric(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Any additional notes..."
-                rows={2}
+                rows={1}
               />
             </div>
             <Button 
@@ -211,10 +211,10 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
           </TabsContent>
 
           {/* Meals Tab */}
-          <TabsContent value="meals" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="meals" className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Meal Type</label>
+                <label className="text-xs font-medium">Meal Type</label>
                 <Select value={meal.meal_type} onValueChange={(value) => setMeal(prev => ({ ...prev, meal_type: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -228,7 +228,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Total Calories</label>
+                <label className="text-xs font-medium">Total Calories</label>
                 <Input
                   type="number"
                   value={meal.total_calories}
@@ -239,10 +239,10 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
             </div>
             
             <div>
-              <label className="text-sm font-medium">Food Items</label>
-              <div className="space-y-2">
+              <label className="text-xs font-medium">Food Items</label>
+              <div className="space-y-1.5">
                 {meal.foods.map((food, index) => (
-                  <div key={index} className="flex gap-2">
+                  <div key={index} className="flex gap-1.5">
                     <Input
                       placeholder="Food name"
                       value={food.name}
@@ -254,13 +254,13 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                       placeholder="Calories"
                       value={food.calories}
                       onChange={(e) => updateFoodItem(index, 'calories', parseInt(e.target.value) || 0)}
-                      className="w-24"
+                      className="w-20"
                     />
                     <Input
                       placeholder="Amount"
                       value={food.amount}
                       onChange={(e) => updateFoodItem(index, 'amount', e.target.value)}
-                      className="w-24"
+                      className="w-20"
                     />
                     <Button
                       variant="outline"
@@ -279,12 +279,12 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
             </div>
             
             <div>
-              <label className="text-sm font-medium">Notes (optional)</label>
+              <label className="text-xs font-medium">Notes (optional)</label>
               <Textarea
                 value={meal.notes}
                 onChange={(e) => setMeal(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Any additional notes about this meal..."
-                rows={2}
+                rows={1}
               />
             </div>
             <Button 
@@ -297,9 +297,9 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
           </TabsContent>
 
           {/* Steps Tab */}
-          <TabsContent value="steps" className="space-y-4">
+          <TabsContent value="steps" className="space-y-3">
             <div>
-              <label className="text-sm font-medium">Steps Count</label>
+              <label className="text-xs font-medium">Steps Count</label>
               <Input
                 type="number"
                 value={steps.steps_count}
@@ -307,9 +307,9 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 placeholder="Enter number of steps"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Distance (miles)</label>
+                <label className="text-xs font-medium">Distance (miles)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -319,7 +319,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Calories Burned</label>
+                <label className="text-xs font-medium">Calories Burned</label>
                 <Input
                   type="number"
                   value={steps.calories_burned}
@@ -329,7 +329,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Date</label>
+              <label className="text-xs font-medium">Date</label>
               <Input
                 type="date"
                 value={steps.logged_date}
@@ -346,10 +346,10 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
           </TabsContent>
 
           {/* Exercise Tab */}
-          <TabsContent value="exercise" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <TabsContent value="exercise" className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Exercise Type</label>
+                <label className="text-xs font-medium">Exercise Type</label>
                 <Select value={exercise.exercise_type} onValueChange={(value) => setExercise(prev => ({ ...prev, exercise_type: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -369,7 +369,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Intensity</label>
+                <label className="text-xs font-medium">Intensity</label>
                 <Select value={exercise.intensity_level} onValueChange={(value) => setExercise(prev => ({ ...prev, intensity_level: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -383,16 +383,16 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Exercise Name</label>
+              <label className="text-xs font-medium">Exercise Name</label>
               <Input
                 value={exercise.exercise_name}
                 onChange={(e) => setExercise(prev => ({ ...prev, exercise_name: e.target.value }))}
                 placeholder="e.g., Morning Run, Weight Training"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Duration (minutes)</label>
+                <label className="text-xs font-medium">Duration (minutes)</label>
                 <Input
                   type="number"
                   value={exercise.duration_minutes}
@@ -401,7 +401,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Calories Burned</label>
+                <label className="text-xs font-medium">Calories Burned</label>
                 <Input
                   type="number"
                   value={exercise.calories_burned}
@@ -411,12 +411,12 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Notes (optional)</label>
+              <label className="text-xs font-medium">Notes (optional)</label>
               <Textarea
                 value={exercise.notes}
                 onChange={(e) => setExercise(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="How did it feel? Any notes about the workout..."
-                rows={2}
+                rows={1}
               />
             </div>
             <Button 
@@ -429,9 +429,9 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
           </TabsContent>
 
           {/* Supplements Tab */}
-          <TabsContent value="supplements" className="space-y-4">
+          <TabsContent value="supplements" className="space-y-3">
             <div>
-              <label className="text-sm font-medium">Supplement Name</label>
+              <label className="text-xs font-medium">Supplement Name</label>
               <Input
                 value={supplement.supplement_name}
                 onChange={(e) => setSupplement(prev => ({ ...prev, supplement_name: e.target.value }))}
@@ -439,7 +439,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Dosage</label>
+              <label className="text-xs font-medium">Dosage</label>
               <Input
                 value={supplement.dosage}
                 onChange={(e) => setSupplement(prev => ({ ...prev, dosage: e.target.value }))}
@@ -447,12 +447,12 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Notes (optional)</label>
+              <label className="text-xs font-medium">Notes (optional)</label>
               <Textarea
                 value={supplement.notes}
                 onChange={(e) => setSupplement(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Any notes about this supplement..."
-                rows={2}
+                rows={1}
               />
             </div>
             <Button 

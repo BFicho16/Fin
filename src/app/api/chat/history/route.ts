@@ -13,22 +13,32 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the health wellness agent
-    const healthAgent = mastra.getAgent('healthWellnessAgent');
-    const memory = await healthAgent.getMemory();
+    // Check user's onboarding status
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
+    // Get the appropriate agent based on onboarding status
+    const agent = profile?.onboarding_completed 
+      ? mastra.getAgent('longevityCoachAgent')
+      : mastra.getAgent('onboardingAgent');
+    
+    const memory = await agent.getMemory();
 
     if (!memory) {
       return Response.json({ error: 'Memory not available' }, { status: 500 });
     }
 
-    // Use the same stable thread ID format as the chat API
-    const threadId = `health-assistant-${user.id}`;
+    // Use the same thread ID format as the chat API
+    const threadId = profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`;
 
     // Query the memory for messages in this thread
     try {
       const { uiMessages } = await memory.query({
         threadId,
-        resourceId: user.id,
+        resourceId: profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`,
         selectBy: {
           last: 50, // Get last 50 messages
         },

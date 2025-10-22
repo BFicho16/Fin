@@ -141,12 +141,12 @@ export default function GoalsPanel({ userId }: GoalsPanelProps) {
     return (
       <Card>
         <CardHeader>
-          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-24" />
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+        <CardContent className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
         </CardContent>
       </Card>
     );
@@ -156,14 +156,14 @@ export default function GoalsPanel({ userId }: GoalsPanelProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold flex items-center">
-            <Target className="h-5 w-5 mr-2" />
+          <h3 className="text-sm font-semibold flex items-center">
+            <Target className="h-4 w-4 mr-1.5" />
             Your Goals
           </h3>
           <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-3.5 w-3.5 mr-1" />
                 Add Goal
               </Button>
             </DialogTrigger>
@@ -270,35 +270,35 @@ export default function GoalsPanel({ userId }: GoalsPanelProps) {
 
       <CardContent>
         {goals.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            <Target className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No goals yet</p>
-            <p className="text-sm mt-2">Add your first health goal to get started!</p>
+          <div className="text-center text-muted-foreground py-6">
+            <Target className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+            <p className="text-sm font-medium">No goals yet</p>
+            <p className="text-xs mt-1.5">Add your first health goal to get started!</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {goals.map((goal) => (
-              <Card key={goal.id} className="p-4">
+              <Card key={goal.id} className="p-2.5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-center space-x-1.5 mb-1.5">
                       {getStatusIcon(goal.status)}
-                      <h4 className="font-medium capitalize">
+                      <h4 className="font-medium capitalize text-xs">
                         {goal.goal_type.replace('_', ' ')}
                       </h4>
-                      <Badge variant={getStatusVariant(goal.status) as any}>
+                      <Badge variant={getStatusVariant(goal.status) as any} className="text-[10px]">
                         {goal.status}
                       </Badge>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="text-[10px]">
                         Priority {goal.priority}
                       </Badge>
                     </div>
                     
                     {goal.goal_description && (
-                      <p className="text-sm text-muted-foreground mb-2">{goal.goal_description}</p>
+                      <p className="text-xs text-muted-foreground mb-1.5">{goal.goal_description}</p>
                     )}
                     
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-3 text-xs text-muted-foreground">
                       {goal.target_value && (
                         <span>
                           Target: {goal.target_value} {goal.target_unit || ''}

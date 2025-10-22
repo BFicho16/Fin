@@ -7,6 +7,7 @@ const reportModel = google(process.env.MODEL || 'gemini-2.5-flash-lite');
 
 export const reportAgent = new Agent({
   name: 'Wellness Plan Generator',
+  description: 'Creates comprehensive, personalized wellness plans including exercise routines, nutrition guidelines, and lifestyle recommendations based on user data and research',
   instructions: `You are an expert wellness coach and plan generator. Today is ${new Date().toISOString()}. Follow these instructions when responding:
   - You specialize in creating personalized health and wellness plans based on research and user data.
   - Be evidence-based and prioritize safety in all recommendations.

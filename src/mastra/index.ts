@@ -6,7 +6,9 @@ import { evaluationAgent } from './agents/evaluationAgent';
 import { reportAgent } from './agents/reportAgent';
 import { researchAgent } from './agents/researchAgent';
 import { webSummarizationAgent } from './agents/webSummarizationAgent';
-import { healthWellnessAgent } from './agents/healthWellnessAgent';
+import { longevityCoachAgent } from './agents/longevityCoachAgent';
+import { dataLoggerAgent } from './agents/dataLoggerAgent';
+import { onboardingAgent } from './agents/onboardingAgent';
 import { generateReportWorkflow } from './workflows/generateReportWorkflow';
 import { healthDataCollectionWorkflow } from './workflows/healthDataCollectionWorkflow';
 
@@ -23,7 +25,9 @@ export const mastra = new Mastra({
     evaluationAgent,
     learningExtractionAgent,
     webSummarizationAgent,
-    healthWellnessAgent,
+    longevityCoachAgent,
+    dataLoggerAgent,
+    onboardingAgent,
   },
   workflows: { generateReportWorkflow, researchWorkflow, healthDataCollectionWorkflow },
   telemetry: {
@@ -44,7 +48,9 @@ export function createUserMastra(userId: string) {
       evaluationAgent,
       learningExtractionAgent,
       webSummarizationAgent,
-      healthWellnessAgent,
+      longevityCoachAgent,
+      dataLoggerAgent,
+      onboardingAgent,
     },
     workflows: { generateReportWorkflow, researchWorkflow, healthDataCollectionWorkflow },
     telemetry: {

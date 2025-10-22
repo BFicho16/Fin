@@ -21,7 +21,7 @@ export async function GET(
 
     // Build query
     let query = supabase
-      .from('wellness_plans')
+      .from('user_routines')
       .select('*')
       .eq('user_id', resolvedParams.userId);
 
@@ -29,15 +29,15 @@ export async function GET(
       query = query.eq('status', status);
     }
 
-    const { data: plans, error: plansError } = await query.order('created_at', { ascending: false });
+    const { data: routines, error: routinesError } = await query.order('created_at', { ascending: false });
 
-    if (plansError) {
-      return Response.json({ error: 'Failed to fetch plans' }, { status: 400 });
+    if (routinesError) {
+      return Response.json({ error: 'Failed to fetch routines' }, { status: 400 });
     }
 
-    return Response.json({ plans });
+    return Response.json({ routines });
   } catch (error) {
-    console.error('Error fetching plans:', error);
+    console.error('Error fetching routines:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -57,25 +57,25 @@ export async function POST(
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const plan = await request.json();
+    const routine = await request.json();
 
-    // Create new wellness plan
-    const { data: newPlan, error: planError } = await supabase
-      .from('wellness_plans')
+    // Create new routine
+    const { data: newRoutine, error: routineError } = await supabase
+      .from('user_routines')
       .insert({
         user_id: resolvedParams.userId,
-        ...plan,
+        ...routine,
       })
       .select()
       .single();
 
-    if (planError) {
-      return Response.json({ error: 'Failed to create plan' }, { status: 400 });
+    if (routineError) {
+      return Response.json({ error: 'Failed to create routine' }, { status: 400 });
     }
 
-    return Response.json({ plan: newPlan });
+    return Response.json({ routine: newRoutine });
   } catch (error) {
-    console.error('Error creating plan:', error);
+    console.error('Error creating routine:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

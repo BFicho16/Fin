@@ -35,7 +35,7 @@ const getUserQueryStep = createStep({
     }
 
     // Get user context from the health wellness agent's memory
-    const agent = mastra.getAgent('healthWellnessAgent');
+    const agent = mastra.getAgent('longevityCoachAgent');
     
     await suspend({
       message: {

@@ -36,7 +36,7 @@ export default function DashboardPanel({ userId }: DashboardPanelProps) {
     const isExpanded = expandedSections[section.id];
 
     return (
-      <Card key={section.id} className="mb-4">
+      <Card key={section.id} className="mb-3">
         <Collapsible
           open={isExpanded}
           onOpenChange={() => toggleSection(section.id)}
@@ -45,14 +45,14 @@ export default function DashboardPanel({ userId }: DashboardPanelProps) {
             <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Icon className="h-5 w-5" />
-                  <h3 className="text-lg font-semibold">{section.title}</h3>
+                  <Icon className="h-4 w-4" />
+                  <h3 className="text-sm font-semibold">{section.title}</h3>
                 </div>
                 <Button variant="ghost" size="sm" className="p-1">
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5" />
                   )}
                 </Button>
               </div>
@@ -60,7 +60,7 @@ export default function DashboardPanel({ userId }: DashboardPanelProps) {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="pt-0">
-              <Component userId={userId} />
+              <Component userId={userId} embedded={true} />
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
@@ -69,10 +69,11 @@ export default function DashboardPanel({ userId }: DashboardPanelProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {dashboardSections
         .sort((a, b) => a.order - b.order)
         .map(renderSection)}
     </div>
   );
 }
+

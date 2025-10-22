@@ -21,8 +21,17 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // Get the health wellness agent
-    const healthAgent = mastra.getAgent('healthWellnessAgent');
+    // Check user's onboarding status
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
+    // Route to appropriate agent based on onboarding status
+    const agent = profile?.onboarding_completed 
+      ? mastra.getAgent('longevityCoachAgent')
+      : mastra.getAgent('onboardingAgent');
     
     // Create runtime context with authenticated Supabase client
     const runtimeContext = new RuntimeContext();
@@ -36,10 +45,10 @@ export async function POST(request: NextRequest) {
           // Try primary model first
           let response;
           try {
-            response = await healthAgent.stream(message, {
+            response = await agent.stream(message, {
               memory: {
-                thread: threadId || `health-assistant-${user.id}`,
-                resource: user.id,
+                thread: threadId || (profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`),
+                resource: profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`,
               },
               runtimeContext,
             });
@@ -51,16 +60,16 @@ export async function POST(request: NextRequest) {
               // Create a new agent instance with fallback model
               const fallbackModel = google('gemini-2.5-flash');
               const fallbackAgent = new (await import('@mastra/core/agent')).Agent({
-                name: healthAgent.name,
-                instructions: healthAgent.instructions,
+                name: agent.name,
+                instructions: agent.instructions,
                 model: fallbackModel,
-                tools: healthAgent.tools,
+                tools: agent.tools,
               });
               
               response = await fallbackAgent.stream(message, {
                 memory: {
-                  thread: threadId || `health-assistant-${user.id}`,
-                  resource: user.id,
+                  thread: threadId || (profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`),
+                  resource: profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`,
                 },
                 runtimeContext,
               });

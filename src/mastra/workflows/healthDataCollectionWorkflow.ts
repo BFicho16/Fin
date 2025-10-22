@@ -75,7 +75,7 @@ const gatherDemographicsStep = createStep({
       return resumeData;
     }
 
-    const agent = mastra.getAgent('healthWellnessAgent');
+    const agent = mastra.getAgent('longevityCoachAgent');
     
     await suspend({
       message: {
@@ -440,7 +440,7 @@ const saveToDatabaseStep = createStep({
     message: z.string(),
   }),
   execute: async ({ inputData, mastra }) => {
-    const agent = mastra.getAgent('healthWellnessAgent');
+    const agent = mastra.getAgent('longevityCoachAgent');
     const { allData } = inputData;
 
     try {

@@ -254,122 +254,74 @@ export const saveDietaryPreferencesTool = createTool({
   },
 });
 
-// User Habits Tools
-export const saveUserHabitsTool = createTool({
-  id: 'save-user-habits',
-  description: 'Save or update user current habits and routines',
+// Routine Management Tools
+export const createRoutineTool = createTool({
+  id: 'create-routine',
+  description: 'Create a new routine for the user',
   inputSchema: z.object({
-    habits: z.array(z.object({
-      habit_type: z.enum(['exercise', 'sleep', 'diet', 'hydration', 'stress_management', 'supplements', 'other']),
-      habit_name: z.string(),
-      frequency: z.string(),
-      duration_minutes: z.number().optional(),
-      intensity: z.enum(['low', 'moderate', 'high']).optional(),
+    routine: z.object({
+      routine_name: z.string(),
       description: z.string().optional(),
-      current_status: z.enum(['active', 'inactive', 'paused']).default('active'),
-    })),
-  }),
-  outputSchema: z.object({
-    success: z.boolean(),
-    message: z.string(),
-    habit_ids: z.array(z.string()),
-  }),
-  execute: async ({ context, memory, runtimeContext }) => {
-    // Get user ID from runtime context instead of memory
-    const userId = runtimeContext?.get('userId');
-    if (!userId) {
-      throw new Error('User ID not found in runtime context');
-    }
-    const { habits } = context;
-    const supabase = await createClient();
-    
-    const habit_ids: string[] = [];
-    
-    for (const habit of habits) {
-      const { data, error } = await supabase
-        .from('user_habits')
-        .insert({
-          user_id: userId,
-          ...habit,
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to save habit: ${error.message}`);
-      }
-      
-      habit_ids.push(data.id);
-    }
-
-    return { 
-      success: true, 
-      message: 'Habits saved successfully',
-      habit_ids
-    };
-  },
-});
-
-// Wellness Plan Tools
-export const createWellnessPlanTool = createTool({
-  id: 'create-wellness-plan',
-  description: 'Create a new wellness plan for the user',
-  inputSchema: z.object({
-    plan: z.object({
-      plan_name: z.string(),
-      plan_description: z.string().optional(),
-      plan_type: z.enum(['weight_loss', 'muscle_gain', 'strength_training', 'endurance', 'longevity', 'general_wellness', 'rehabilitation']),
-      target_start_date: z.string().optional(),
-      target_end_date: z.string().optional(),
-      estimated_duration_weeks: z.number().optional(),
-      difficulty_level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-      plan_data: z.any(), // JSONB structure for the full plan
+      status: z.enum(['pending', 'active', 'archived']).default('pending'),
+      schedule_type: z.enum(['weekly', 'monthly', 'yearly']),
+      schedule_config: z.object({
+        days_of_week: z.array(z.number().min(0).max(6)).optional(),
+        days_of_month: z.array(z.number().min(1).max(31)).optional(),
+        days_of_year: z.array(z.string()).optional(),
+      }),
+      time_of_day: z.enum(['morning', 'lunch', 'night', 'workout']).optional(),
     }),
   }),
   outputSchema: z.object({
     success: z.boolean(),
     message: z.string(),
-    plan_id: z.string(),
+    routine_id: z.string(),
   }),
   execute: async ({ context, memory, runtimeContext }) => {
-    // Get user ID from runtime context instead of memory
     const userId = runtimeContext?.get('userId');
     if (!userId) {
       throw new Error('User ID not found in runtime context');
     }
-    const { plan } = context;
+    const { routine } = context;
     const supabase = await createClient();
     
     const { data, error } = await supabase
-      .from('wellness_plans')
+      .from('user_routines')
       .insert({
         user_id: userId,
-        ...plan,
+        ...routine,
       })
       .select('id')
       .single();
 
     if (error) {
-      throw new Error(`Failed to create wellness plan: ${error.message}`);
+      throw new Error(`Failed to create routine: ${error.message}`);
     }
 
     return { 
       success: true, 
-      message: 'Wellness plan created successfully',
-      plan_id: data.id
+      message: 'Routine created successfully',
+      routine_id: data.id
     };
   },
 });
 
-export const updatePlanStatusTool = createTool({
-  id: 'update-plan-status',
-  description: 'Update wellness plan status and user approval',
+export const updateRoutineTool = createTool({
+  id: 'update-routine',
+  description: 'Update routine details and status',
   inputSchema: z.object({
-    planId: z.string().describe('Wellness plan ID'),
+    routineId: z.string().describe('Routine ID'),
     updates: z.object({
-      status: z.enum(['draft', 'active', 'completed', 'paused', 'cancelled']).optional(),
-      user_approval_status: z.enum(['pending', 'approved', 'rejected', 'needs_revision']).optional(),
-      user_feedback: z.string().optional(),
+      routine_name: z.string().optional(),
+      description: z.string().optional(),
+      status: z.enum(['pending', 'active', 'archived']).optional(),
+      schedule_type: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+      schedule_config: z.object({
+        days_of_week: z.array(z.number().min(0).max(6)).optional(),
+        days_of_month: z.array(z.number().min(1).max(31)).optional(),
+        days_of_year: z.array(z.string()).optional(),
+      }).optional(),
+      time_of_day: z.enum(['morning', 'lunch', 'night', 'workout']).optional(),
     }),
   }),
   outputSchema: z.object({
@@ -377,50 +329,50 @@ export const updatePlanStatusTool = createTool({
     message: z.string(),
   }),
   execute: async ({ context, memory, runtimeContext }) => {
-    const { planId, updates } = context;
+    const userId = runtimeContext?.get('userId');
+    if (!userId) {
+      throw new Error('User ID not found in runtime context');
+    }
+    const { routineId, updates } = context;
     const supabase = await createClient();
     
     const { error } = await supabase
-      .from('wellness_plans')
+      .from('user_routines')
       .update(updates)
-      .eq('id', planId);
+      .eq('id', routineId)
+      .eq('user_id', userId);
 
     if (error) {
-      throw new Error(`Failed to update plan status: ${error.message}`);
+      throw new Error(`Failed to update routine: ${error.message}`);
     }
 
     return { 
       success: true, 
-      message: 'Plan status updated successfully' 
+      message: 'Routine updated successfully' 
     };
   },
 });
 
-export const getUserWellnessPlansTool = createTool({
-  id: 'get-user-wellness-plans',
-  description: 'Retrieve user wellness plans',
+export const getUserRoutinesTool = createTool({
+  id: 'get-user-routines',
+  description: 'Retrieve user routines',
   inputSchema: z.object({
-    status: z.string().optional().describe('Filter by plan status'),
+    status: z.string().optional().describe('Filter by routine status'),
   }),
   outputSchema: z.object({
-    plans: z.array(z.object({
+    routines: z.array(z.object({
       id: z.string(),
-      plan_name: z.string(),
-      plan_description: z.string().nullable(),
-      plan_type: z.string(),
+      routine_name: z.string(),
+      description: z.string().nullable(),
       status: z.string(),
-      target_start_date: z.string().nullable(),
-      target_end_date: z.string().nullable(),
-      estimated_duration_weeks: z.number().nullable(),
-      difficulty_level: z.string().nullable(),
-      user_approval_status: z.string(),
-      user_feedback: z.string().nullable(),
+      schedule_type: z.string(),
+      schedule_config: z.any(),
+      time_of_day: z.string().nullable(),
       created_at: z.string(),
       updated_at: z.string(),
     })),
   }),
   execute: async ({ context, memory, runtimeContext }) => {
-    // Get user ID from runtime context instead of memory
     const userId = runtimeContext?.get('userId');
     if (!userId) {
       throw new Error('User ID not found in runtime context');
@@ -429,7 +381,7 @@ export const getUserWellnessPlansTool = createTool({
     const supabase = await createClient();
     
     let query = supabase
-      .from('wellness_plans')
+      .from('user_routines')
       .select('*')
       .eq('user_id', userId);
 
@@ -440,10 +392,255 @@ export const getUserWellnessPlansTool = createTool({
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to fetch wellness plans: ${error.message}`);
+      throw new Error(`Failed to fetch routines: ${error.message}`);
     }
 
-    return { plans: data || [] };
+    return { routines: data || [] };
+  },
+});
+
+export const addRoutineItemTool = createTool({
+  id: 'add-routine-item',
+  description: 'Add an item to a routine',
+  inputSchema: z.object({
+    routineId: z.string().describe('Routine ID'),
+    item: z.object({
+      item_name: z.string(),
+      item_type: z.enum(['exercise', 'food', 'supplement', 'activity', 'rest', 'other']),
+      habit_classification: z.enum(['good', 'bad', 'neutral']).default('neutral'),
+      duration_minutes: z.number().optional(),
+      sets: z.number().optional(),
+      reps: z.number().optional(),
+      weight_kg: z.number().optional(),
+      distance_km: z.number().optional(),
+      calories: z.number().optional(),
+      serving_size: z.string().optional(),
+      notes: z.string().optional(),
+      item_order: z.number().default(1),
+      is_optional: z.boolean().default(false),
+    }),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string(),
+    item_id: z.string(),
+  }),
+  execute: async ({ context, memory, runtimeContext }) => {
+    const userId = runtimeContext?.get('userId');
+    if (!userId) {
+      throw new Error('User ID not found in runtime context');
+    }
+    const { routineId, item } = context;
+    const supabase = await createClient();
+    
+    // Verify routine ownership
+    const { data: routine, error: routineError } = await supabase
+      .from('user_routines')
+      .select('id')
+      .eq('id', routineId)
+      .eq('user_id', userId)
+      .single();
+
+    if (routineError || !routine) {
+      throw new Error('Routine not found or access denied');
+    }
+
+    const { data, error } = await supabase
+      .from('routine_items')
+      .insert({
+        routine_id: routineId,
+        habit_classification: item.habit_classification || 'neutral',
+        ...item,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to add routine item: ${error.message}`);
+    }
+
+    return { 
+      success: true, 
+      message: 'Routine item added successfully',
+      item_id: data.id
+    };
+  },
+});
+
+export const updateRoutineItemTool = createTool({
+  id: 'update-routine-item',
+  description: 'Update a routine item',
+  inputSchema: z.object({
+    itemId: z.string().describe('Routine item ID'),
+    updates: z.object({
+      item_name: z.string().optional(),
+      item_type: z.enum(['exercise', 'food', 'supplement', 'activity', 'rest', 'other']).optional(),
+      duration_minutes: z.number().optional(),
+      sets: z.number().optional(),
+      reps: z.number().optional(),
+      weight_kg: z.number().optional(),
+      distance_km: z.number().optional(),
+      calories: z.number().optional(),
+      serving_size: z.string().optional(),
+      notes: z.string().optional(),
+      item_order: z.number().optional(),
+      is_optional: z.boolean().optional(),
+    }),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string(),
+  }),
+  execute: async ({ context, memory, runtimeContext }) => {
+    const userId = runtimeContext?.get('userId');
+    if (!userId) {
+      throw new Error('User ID not found in runtime context');
+    }
+    const { itemId, updates } = context;
+    const supabase = await createClient();
+    
+    // Verify item ownership through routine
+    const { data: item, error: itemError } = await supabase
+      .from('routine_items')
+      .select(`
+        id,
+        user_routines!inner (
+          user_id
+        )
+      `)
+      .eq('id', itemId)
+      .eq('user_routines.user_id', userId)
+      .single();
+
+    if (itemError || !item) {
+      throw new Error('Routine item not found or access denied');
+    }
+
+    const { error } = await supabase
+      .from('routine_items')
+      .update(updates)
+      .eq('id', itemId);
+
+    if (error) {
+      throw new Error(`Failed to update routine item: ${error.message}`);
+    }
+
+    return { 
+      success: true, 
+      message: 'Routine item updated successfully' 
+    };
+  },
+});
+
+export const deleteRoutineItemTool = createTool({
+  id: 'delete-routine-item',
+  description: 'Remove an item from a routine',
+  inputSchema: z.object({
+    itemId: z.string().describe('Routine item ID'),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string(),
+  }),
+  execute: async ({ context, memory, runtimeContext }) => {
+    const userId = runtimeContext?.get('userId');
+    if (!userId) {
+      throw new Error('User ID not found in runtime context');
+    }
+    const { itemId } = context;
+    const supabase = await createClient();
+    
+    // Verify item ownership through routine
+    const { data: item, error: itemError } = await supabase
+      .from('routine_items')
+      .select(`
+        id,
+        user_routines!inner (
+          user_id
+        )
+      `)
+      .eq('id', itemId)
+      .eq('user_routines.user_id', userId)
+      .single();
+
+    if (itemError || !item) {
+      throw new Error('Routine item not found or access denied');
+    }
+
+    const { error } = await supabase
+      .from('routine_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      throw new Error(`Failed to delete routine item: ${error.message}`);
+    }
+
+    return { 
+      success: true, 
+      message: 'Routine item deleted successfully' 
+    };
+  },
+});
+
+export const markRoutineItemCompleteTool = createTool({
+  id: 'mark-routine-item-complete',
+  description: 'Mark a routine item as completed or skipped',
+  inputSchema: z.object({
+    itemId: z.string().describe('Routine item ID'),
+    completion_date: z.string().optional().describe('Date of completion (YYYY-MM-DD format)'),
+    completion_status: z.enum(['completed', 'skipped']).default('completed').describe('Whether item was completed or skipped'),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    message: z.string(),
+    completion_id: z.string(),
+  }),
+  execute: async ({ context, memory, runtimeContext }) => {
+    const userId = runtimeContext?.get('userId');
+    if (!userId) {
+      throw new Error('User ID not found in runtime context');
+    }
+    const { itemId, completion_date, completion_status } = context;
+    const supabase = await createClient();
+    
+    // Verify item ownership through routine
+    const { data: item, error: itemError } = await supabase
+      .from('routine_items')
+      .select(`
+        id,
+        user_routines!inner (
+          user_id
+        )
+      `)
+      .eq('id', itemId)
+      .eq('user_routines.user_id', userId)
+      .single();
+
+    if (itemError || !item) {
+      throw new Error('Routine item not found or access denied');
+    }
+
+    const { data, error } = await supabase
+      .from('routine_completions')
+      .insert({
+        routine_item_id: itemId,
+        user_id: userId,
+        completion_date: completion_date || new Date().toISOString().split('T')[0],
+        completion_status: completion_status || 'completed',
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to mark item as complete: ${error.message}`);
+    }
+
+    return { 
+      success: true, 
+      message: 'Routine item marked as complete',
+      completion_id: data.id
+    };
   },
 });
 

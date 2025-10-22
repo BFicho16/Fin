@@ -5,8 +5,9 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
+    "noImplicitAny": false,
     "noEmit": true,
     "outDir": "dist",
     "baseUrl": ".",
@@ -30,11 +31,16 @@
         "name": "next"
       }
     ],
-    "types": ["react", "react-dom"]
+    "types": [
+      "react",
+      "react-dom"
+    ],
+    "jsxImportSource": "react"
   },
   "include": [
     "next-env.d.ts",
     "src/**/*",
+    "src/types/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

@@ -1,12 +1,38 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot } from 'lucide-react';
+import { Send, User, Bot, Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { MessageContent } from './MessageContent';
+
+// Type assertion to fix React 19 type conflicts
+const CardComponent = Card as any;
+const CardHeaderComponent = CardHeader as any;
+const CardContentComponent = CardContent as any;
+const CardFooterComponent = CardFooter as any;
+const ButtonComponent = Button as any;
+const TextareaComponent = Textarea as any;
+const DropdownMenuComponent = DropdownMenu as any;
+const DropdownMenuTriggerComponent = DropdownMenuTrigger as any;
+const DropdownMenuContentComponent = DropdownMenuContent as any;
+const DropdownMenuItemComponent = DropdownMenuItem as any;
+const DropdownMenuSeparatorComponent = DropdownMenuSeparator as any;
+const MenuIcon = Menu as any;
+const UserIcon = User as any;
+const BotIcon = Bot as any;
+const SendIcon = Send as any;
 
 interface Message {
   id: string;
@@ -17,21 +43,30 @@ interface Message {
 
 interface ChatInterfaceProps {
   userId: string;
+  userEmail: string;
   threadId?: string;
+  isOnboarding?: boolean;
 }
 
-export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) {
+export default function ChatInterface({ userId, userEmail, threadId, isOnboarding = false }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentThreadId, setCurrentThreadId] = useState(threadId || `health-assistant-${userId}`);
+  const [currentThreadId, setCurrentThreadId] = useState(threadId || (isOnboarding ? `onboarding-${userId}` : `longevity-coach-${userId}`));
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const supabase = createClient();
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
   useEffect(() => {
@@ -108,7 +143,7 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage!]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -130,7 +165,7 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
               if (parsed.content) {
                 setMessages(prev => 
                   prev.map(msg => 
-                    msg.id === assistantMessage.id 
+                    msg.id === assistantMessage!.id 
                       ? { ...msg, content: msg.content + parsed.content }
                       : msg
                   )
@@ -138,7 +173,7 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
               } else if (parsed.error) {
                 setMessages(prev => 
                   prev.map(msg => 
-                    msg.id === assistantMessage.id 
+                    msg.id === assistantMessage!.id 
                       ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
                       : msg
                   )
@@ -155,7 +190,7 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
 
       // Ensure we have a thread ID for future messages
       if (!currentThreadId) {
-        setCurrentThreadId(`health-assistant-${userId}`);
+        setCurrentThreadId(isOnboarding ? `onboarding-${userId}` : `longevity-coach-${userId}`);
       }
 
     } catch (error) {
@@ -163,7 +198,7 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
       if (assistantMessage) {
         setMessages(prev => 
           prev.map(msg => 
-            msg.id === assistantMessage.id 
+            msg.id === assistantMessage!.id 
               ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
               : msg
           )
@@ -182,32 +217,66 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
   };
 
   return (
-    <Card className="flex flex-col h-full max-h-screen">
-      {/* Header */}
-      <CardHeader className="pb-3 flex-shrink-0">
-        <h3 className="text-lg font-semibold">Health & Wellness Assistant</h3>
-        <p className="text-sm text-muted-foreground">Your personalized health coach is here to help</p>
-      </CardHeader>
+    <CardComponent className="flex flex-col h-full max-h-screen overflow-hidden">
+      {/* Consolidated Header */}
+      <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xs font-medium">
+              {isOnboarding ? 'Onboarding Interview' : 'Longevity Coach'}
+            </h3>
+          </div>
+          <DropdownMenuComponent>
+            <DropdownMenuTriggerComponent asChild>
+              <ButtonComponent variant="ghost" size="icon">
+                <MenuIcon className="h-4 w-4" />
+              </ButtonComponent>
+            </DropdownMenuTriggerComponent>
+            <DropdownMenuContentComponent align="end">
+              <DropdownMenuItemComponent disabled>
+                Settings
+              </DropdownMenuItemComponent>
+              <DropdownMenuSeparatorComponent />
+              <DropdownMenuItemComponent onClick={handleLogout}>
+                Logout
+              </DropdownMenuItemComponent>
+            </DropdownMenuContentComponent>
+          </DropdownMenuComponent>
+        </div>
+      </div>
 
       {/* Messages */}
-      <CardContent ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-4 min-h-0">
+      <CardContentComponent ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 min-h-0">
         {isLoadingHistory ? (
-          <div className="text-center text-muted-foreground mt-8">
-            <div className="flex items-center justify-center space-x-2">
-              <Skeleton className="w-4 h-4 rounded-full" />
-              <Skeleton className="w-4 h-4 rounded-full" />
-              <Skeleton className="w-4 h-4 rounded-full" />
+          <div className="text-center text-muted-foreground mt-6">
+            <div className="flex items-center justify-center space-x-1.5">
+              <Skeleton className="w-3 h-3 rounded-full" />
+              <Skeleton className="w-3 h-3 rounded-full" />
+              <Skeleton className="w-3 h-3 rounded-full" />
             </div>
-            <p className="text-sm mt-2">Loading your chat history...</p>
+            <p className="text-xs mt-1.5">Loading your chat history...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground mt-8">
-            <Bot className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">Welcome to your Health & Wellness Assistant!</p>
-            <p className="text-sm mt-2">
-              I&apos;m here to help you achieve your health goals. Ask me anything about nutrition, exercise, 
-              wellness planning, or share your health information to get started.
-            </p>
+          <div className="text-center text-muted-foreground mt-6">
+            <BotIcon className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+            {isOnboarding ? (
+              <>
+                <p className="text-sm font-medium">Welcome! Let's get to know you better.</p>
+                <p className="text-xs mt-1.5">
+                  I&apos;m here to learn about your current lifestyle, habits, and preferences. 
+                  This will help me create personalized routines that match your actual daily patterns.
+                  Let&apos;s start with some basic information about you!
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium">Welcome to your Longevity Coach!</p>
+                <p className="text-xs mt-1.5">
+                  I&apos;m here to help you achieve optimal health and longevity. Ask me about research, nutrition, exercise, 
+                  wellness planning, or share your health information to get started.
+                </p>
+              </>
+            )}
           </div>
         ) : null}
 
@@ -216,68 +285,77 @@ export default function ChatInterface({ userId, threadId }: ChatInterfaceProps) 
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <Card className={`max-w-xs lg:max-w-md ${
+            <CardComponent className={`max-w-xs lg:max-w-md ${
               message.role === 'user'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted'
             }`}>
-              <CardContent className="p-3">
-                <div className="flex items-center space-x-2 mb-2">
+              <CardContentComponent className="p-2">
+                <div className="flex items-center space-x-1.5 mb-1.5">
                   {message.role === 'user' ? (
-                    <User className="h-4 w-4" />
+                    <UserIcon className="h-3.5 w-3.5" />
                   ) : (
-                    <Bot className="h-4 w-4" />
+                    <BotIcon className="h-3.5 w-3.5" />
                   )}
-                  <span className="text-xs opacity-70">
+                  <span className="text-[10px] opacity-70">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
                 </div>
                 <MessageContent content={message.content} />
-              </CardContent>
-            </Card>
+              </CardContentComponent>
+            </CardComponent>
           </div>
         ))}
 
         {isLoading && (
           <div className="flex justify-start">
-            <Card className="bg-muted">
-              <CardContent className="p-3">
-                <div className="flex items-center space-x-2">
-                  <Bot className="h-4 w-4" />
-                  <div className="flex space-x-1">
-                    <Skeleton className="w-2 h-2 rounded-full" />
-                    <Skeleton className="w-2 h-2 rounded-full" />
-                    <Skeleton className="w-2 h-2 rounded-full" />
+            <CardComponent className="bg-muted">
+              <CardContentComponent className="p-2">
+                <div className="flex items-center space-x-1.5">
+                  <BotIcon className="h-3.5 w-3.5" />
+                  <div className="flex space-x-0.5">
+                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </CardContentComponent>
+            </CardComponent>
           </div>
         )}
-      </CardContent>
+      </CardContentComponent>
 
       {/* Input */}
-      <CardFooter className="pt-3 flex-shrink-0">
-        <div className="flex space-x-2 w-full">
-          <Textarea
+      <CardFooterComponent className="pt-2 flex-shrink-0">
+        <div className="flex space-x-1.5 w-full">
+          <TextareaComponent
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setInputMessage(e.target.value);
+              // Auto-resize textarea
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me about your health goals, nutrition, exercise, or share your health information..."
-            className="flex-1 resize-none"
-            rows={2}
+            placeholder={isOnboarding 
+              ? "Tell me about yourself and your habits..."
+              : "How was your day?"
+            }
+            className="flex-1 resize-none overflow-hidden"
+            rows={1}
             disabled={isLoading}
+            style={{ minHeight: '40px', maxHeight: '120px' }}
           />
-          <Button
+          <ButtonComponent
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
             size="icon"
-            className="shrink-0"
+            className="shrink-0 self-end h-10 w-10"
           >
-            <Send className="h-4 w-4" />
-          </Button>
+            <SendIcon className="h-3.5 w-3.5" />
+          </ButtonComponent>
         </div>
-      </CardFooter>
-    </Card>
+      </CardFooterComponent>
+    </CardComponent>
   );
 }
