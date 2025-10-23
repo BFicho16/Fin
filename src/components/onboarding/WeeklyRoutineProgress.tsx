@@ -60,20 +60,41 @@ export default function WeeklyRoutineProgress({ userId, routines, isGuest }: Wee
   const [progress, setProgress] = useState(calculateWeeklyRoutineProgress(routines));
   const [activeTab, setActiveTab] = useState('Sunday');
 
+  // Transform guest routines to the expected format
+  const transformGuestRoutines = (guestRoutines: any[]) => {
+    return guestRoutines.map(routine => ({
+      id: routine.id || `guest-${routine.day_of_week}-${routine.time_of_day}`,
+      routine_name: routine.routine_name,
+      description: routine.description,
+      status: routine.status || 'active',
+      schedule_type: 'weekly' as const,
+      schedule_config: {
+        days_of_week: [routine.day_of_week]
+      },
+      time_of_day: routine.time_of_day,
+      created_at: routine.created_at || new Date().toISOString(),
+      updated_at: routine.updated_at || new Date().toISOString(),
+      routine_items: routine.items || []
+    }));
+  };
+
   // Update progress when routines change
   useEffect(() => {
+    const processedRoutines = isGuest ? transformGuestRoutines(routines) : routines;
+    
     console.log('🔄 WeeklyRoutineProgress: Received routines:', {
-      count: routines.length,
-      routines: routines.map(r => ({
+      count: processedRoutines.length,
+      isGuest,
+      routines: processedRoutines.map(r => ({
         name: r.routine_name,
-        day: r.day_of_week,
+        day: r.schedule_config?.days_of_week?.[0],
         timeOfDay: r.time_of_day,
         itemsCount: r.routine_items?.length || 0,
         items: r.routine_items?.map((item: any) => item.item_name) || []
       }))
     });
     
-    const newProgress = calculateWeeklyRoutineProgress(routines);
+    const newProgress = calculateWeeklyRoutineProgress(processedRoutines);
     console.log('📊 WeeklyRoutineProgress: Calculated progress:', {
       totalSlotsFilled: newProgress.totalSlotsFilled,
       isComplete: newProgress.isComplete,
@@ -87,7 +108,7 @@ export default function WeeklyRoutineProgress({ userId, routines, isGuest }: Wee
     });
     
     setProgress(newProgress);
-  }, [routines]);
+  }, [routines, isGuest]);
 
   const getTimeOfDayIcon = (timeOfDay: string) => {
     switch (timeOfDay) {
@@ -121,14 +142,14 @@ export default function WeeklyRoutineProgress({ userId, routines, isGuest }: Wee
 
   const getSlotStatusColor = (status: 'complete' | 'empty' | 'missing', isRequired: boolean) => {
     if (status === 'complete') return 'border-green-200 bg-green-50';
-    if (status === 'empty') return 'border-yellow-200 bg-yellow-50';
+    if (status === 'empty') return 'border-orange-200 bg-orange-50'; // Changed from yellow to orange for better distinction
     if (isRequired && status === 'missing') return 'border-red-200 bg-red-50';
     return 'border-gray-200 bg-gray-50';
   };
 
   const getSlotStatusIcon = (status: 'complete' | 'empty' | 'missing', isRequired: boolean) => {
     if (status === 'complete') return <CheckCircle className="h-4 w-4 text-green-600" />;
-    if (status === 'empty') return <Circle className="h-4 w-4 text-yellow-600" />;
+    if (status === 'empty') return <Circle className="h-4 w-4 text-orange-600" />; // Changed from yellow to orange
     if (isRequired && status === 'missing') return <Circle className="h-4 w-4 text-red-600" />;
     return <Circle className="h-4 w-4 text-gray-400" />;
   };

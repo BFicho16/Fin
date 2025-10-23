@@ -290,14 +290,9 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
             <p className="text-xs mt-1.5">Loading your chat history...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground mt-6">
-            <BotIcon className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm font-medium">Welcome! Let's get to know you better.</p>
-            <p className="text-xs mt-1.5">
-              I&apos;m here to learn about your current lifestyle, habits, and preferences. 
-              This will help me create personalized routines that match your actual daily patterns.
-              Let&apos;s start with some basic information about you!
-            </p>
+          <div className="text-center mt-6">
+            <p className="text-sm font-bold text-primary mb-2">Longevity Coach Onboarding</p>
+            <p className="text-2xl font-medium">Tell me about you and your routines and habits, the good and the bad!</p>
           </div>
         ) : null}
 
@@ -312,16 +307,6 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
                 : 'bg-muted'
             }`}>
               <CardContentComponent className="p-2">
-                <div className="flex items-center space-x-1.5 mb-1.5">
-                  {message.role === 'user' ? (
-                    <UserIcon className="h-3.5 w-3.5" />
-                  ) : (
-                    <BotIcon className="h-3.5 w-3.5" />
-                  )}
-                  <span className="text-[10px] opacity-70">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
                 <MessageContent content={message.content} />
               </CardContentComponent>
             </CardComponent>
@@ -332,13 +317,10 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
           <div className="flex justify-start">
             <CardComponent className="bg-muted">
               <CardContentComponent className="p-2">
-                <div className="flex items-center space-x-1.5">
-                  <BotIcon className="h-3.5 w-3.5" />
-                  <div className="flex space-x-0.5">
-                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
-                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
-                    <Skeleton className="w-1.5 h-1.5 rounded-full" />
-                  </div>
+                <div className="flex space-x-0.5">
+                  <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                  <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                  <Skeleton className="w-1.5 h-1.5 rounded-full" />
                 </div>
               </CardContentComponent>
             </CardComponent>

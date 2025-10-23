@@ -1,5 +1,9 @@
 # Health & Wellness Agent Platform with Mastra
 
+My workout on Monday, Wednesday, Friday starts with air squats. I do a set of 100, then 90, then 80, then 70, then 60. Then I move on to push-ups, and I do a hundred, then 90, then 80, then 70, then 60. Then I move on to crunches and I do 190, 150, then 60.  Then I do Superman - 100, 90, 80, 70, then 60.  then pull ups 30, 30 then 15
+
+
+
 This project implements a personalized AI health and wellness assistant using Mastra's workflows and agent capabilities. It features a modern Next.js frontend with Supabase authentication, creating an interactive, user-specific health coaching system that allows users to share their health information, receive personalized wellness plans, and track their progress toward health goals.
 
 ## 🏗️ Architecture
