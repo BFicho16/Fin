@@ -16,7 +16,6 @@ export interface RealtimeCallbacks {
   onMealsUpdate?: (data: any) => void;
   onStepsUpdate?: (data: any) => void;
   onExercisesUpdate?: (data: any) => void;
-  onSupplementsUpdate?: (data: any) => void;
   onGoalsUpdate?: (data: any) => void;
   onRoutinesUpdate?: (data: any) => void;
   onRoutineItemsUpdate?: (data: any) => void;
@@ -61,7 +60,6 @@ export function useHealthDataRealtime(userId: string, callbacks: RealtimeCallbac
     subscribeToTable('meals', callbacks.onMealsUpdate);
     subscribeToTable('steps', callbacks.onStepsUpdate);
     subscribeToTable('exercises', callbacks.onExercisesUpdate);
-    subscribeToTable('supplements', callbacks.onSupplementsUpdate);
     subscribeToTable('goals', callbacks.onGoalsUpdate);
     subscribeToTable('user_routines', callbacks.onRoutinesUpdate);
     subscribeToTable('routine_items', callbacks.onRoutineItemsUpdate);

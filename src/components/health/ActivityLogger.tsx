@@ -58,8 +58,8 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
   });
 
   const [supplement, setSupplement] = useState({
-    supplement_name: '',
-    dosage: '',
+    item_name: '',
+    serving_size: '',
     notes: ''
   });
 
@@ -68,13 +68,74 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
     setSubmitStatus(null);
 
     try {
-      const response = await fetch(`/api/${endpoint}/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      let response;
+      
+      if (endpoint === 'supplements') {
+        // For supplements, create a routine item instead of using the supplements API
+        // First, we need to get or create a supplements routine
+        const routineResponse = await fetch(`/api/routines/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!routineResponse.ok) {
+          throw new Error('Failed to fetch routines');
+        }
+        
+        const routines = await routineResponse.json();
+        let supplementsRoutine = routines.routines?.find((r: any) => r.routine_name === 'Daily Supplements');
+        
+        if (!supplementsRoutine) {
+          // Create a supplements routine if it doesn't exist
+          const createRoutineResponse = await fetch(`/api/routines/${userId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              routine_name: 'Daily Supplements',
+              description: 'Daily supplement intake tracking',
+              status: 'active',
+              schedule_type: 'weekly',
+              schedule_config: { days_of_week: [0, 1, 2, 3, 4, 5, 6] },
+              time_of_day: 'morning'
+            }),
+          });
+          
+          if (!createRoutineResponse.ok) {
+            throw new Error('Failed to create supplements routine');
+          }
+          
+          const newRoutine = await createRoutineResponse.json();
+          supplementsRoutine = newRoutine.routine;
+        }
+        
+        // Now add the supplement as a routine item
+        response = await fetch(`/api/routines/${userId}/${supplementsRoutine.id}/items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            item_name: data.item_name,
+            item_type: 'supplement',
+            serving_size: data.serving_size,
+            notes: data.notes,
+            habit_classification: 'good'
+          }),
+        });
+      } else {
+        // For other endpoints, use the original logic
+        response = await fetch(`/api/${endpoint}/${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+      }
 
       if (response.ok) {
         setSubmitStatus({ type: 'success', message: 'Activity logged successfully!' });
@@ -433,16 +494,16 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
             <div>
               <label className="text-xs font-medium">Supplement Name</label>
               <Input
-                value={supplement.supplement_name}
-                onChange={(e) => setSupplement(prev => ({ ...prev, supplement_name: e.target.value }))}
+                value={supplement.item_name}
+                onChange={(e) => setSupplement(prev => ({ ...prev, item_name: e.target.value }))}
                 placeholder="e.g., Vitamin D, Protein Powder"
               />
             </div>
             <div>
               <label className="text-xs font-medium">Dosage</label>
               <Input
-                value={supplement.dosage}
-                onChange={(e) => setSupplement(prev => ({ ...prev, dosage: e.target.value }))}
+                value={supplement.serving_size}
+                onChange={(e) => setSupplement(prev => ({ ...prev, serving_size: e.target.value }))}
                 placeholder="e.g., 1000 IU, 1 scoop"
               />
             </div>
@@ -457,7 +518,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
             </div>
             <Button 
               onClick={() => handleSubmit('supplements', supplement)}
-              disabled={isSubmitting || !supplement.supplement_name || !supplement.dosage}
+              disabled={isSubmitting || !supplement.item_name || !supplement.serving_size}
               className="w-full"
             >
               {isSubmitting ? 'Logging...' : 'Log Supplement Intake'}

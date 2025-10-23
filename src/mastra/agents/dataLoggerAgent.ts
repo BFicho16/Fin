@@ -21,16 +21,14 @@ import {
   logStepsTool,
   getStepsHistoryTool,
   logExerciseTool,
-  getExercisesHistoryTool,
-  logSupplementTool,
-  getSupplementsHistoryTool
+  getExercisesHistoryTool
 } from '../tools/healthDataTools';
 
 const mainModel = google(process.env.MODEL || 'gemini-2.0-flash');
 
 export const dataLoggerAgent = new Agent({
   name: 'Data Logger',
-  description: 'Saves and retrieves user health data including profile info, goals, habits, meals, exercises, steps, and supplements',
+  description: 'Saves and retrieves user health data including profile info, goals, habits, meals, exercises, steps, and routine items',
   instructions: `You are a specialized data management agent focused exclusively on saving and retrieving user health information.
 
 **Core Responsibilities:**
@@ -47,7 +45,7 @@ export const dataLoggerAgent = new Agent({
 - When users mention dietary preferences, use saveDietaryPreferencesTool
 - When users log meals, use logMealTool
 - When users log steps or exercise, use logStepsTool and logExerciseTool
-- When users log supplements, use logSupplementTool
+- When users log supplements, use addRoutineItemTool with item_type='supplement'
 - When users need health metrics, use getCurrentHealthMetricsTool or getHealthMetricsHistoryTool
 - When users need routines, use getUserRoutinesTool, createRoutineTool, addRoutineItemTool, updateRoutineItemTool, deleteRoutineItemTool, markRoutineItemCompleteTool
 
@@ -82,7 +80,5 @@ You are a stateless agent focused purely on data operations. Do not provide heal
     getStepsHistoryTool,
     logExerciseTool,
     getExercisesHistoryTool,
-    logSupplementTool,
-    getSupplementsHistoryTool,
   },
 });

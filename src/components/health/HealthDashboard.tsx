@@ -10,7 +10,6 @@ import {
   Utensils, 
   Footprints, 
   Dumbbell, 
-  Pill,
   Calendar,
   Target,
   BarChart3
@@ -49,13 +48,6 @@ interface Exercise {
   performed_at: string;
 }
 
-interface Supplement {
-  id: string;
-  supplement_name: string;
-  dosage: string;
-  frequency: string;
-  taken_at: string;
-}
 
 interface HealthDashboardProps {
   userId: string;
@@ -66,7 +58,6 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const [todaySteps, setTodaySteps] = useState<Steps[]>([]);
   const [todayExercises, setTodayExercises] = useState<Exercise[]>([]);
-  const [recentSupplements, setRecentSupplements] = useState<Supplement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -86,13 +77,11 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
         mealsResponse,
         stepsResponse,
         exercisesResponse,
-        supplementsResponse
       ] = await Promise.all([
         fetch(`/api/health-metrics/${userId}?limit=10`),
         fetch(`/api/meals/${userId}?start_date=${startOfDay}&end_date=${endOfDay}`),
         fetch(`/api/steps/${userId}?start_date=${today}&end_date=${today}`),
         fetch(`/api/exercises/${userId}?start_date=${startOfDay}&end_date=${endOfDay}`),
-        fetch(`/api/supplements/${userId}?limit=5`)
       ]);
 
       if (metricsResponse.ok) {
@@ -115,10 +104,6 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
         setTodayExercises(data.exercises || []);
       }
 
-      if (supplementsResponse.ok) {
-        const data = await supplementsResponse.json();
-        setRecentSupplements(data.supplements || []);
-      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -159,12 +144,6 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
         .then(data => setTodayExercises(data.exercises || []))
         .catch(console.error);
     },
-    onSupplementsUpdate: () => {
-      fetch(`/api/supplements/${userId}?limit=5`)
-        .then(res => res.json())
-        .then(data => setRecentSupplements(data.supplements || []))
-        .catch(console.error);
-    }
   });
 
   const getLatestMetric = (metricType: string) => {
@@ -351,35 +330,6 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Pill className="h-4 w-4" />
-              Recent Supplements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentSupplements.length > 0 ? (
-              <div className="space-y-1">
-                {recentSupplements.map((supplement) => (
-                  <div key={supplement.id} className="flex justify-between items-center p-1.5 bg-muted rounded">
-                    <div>
-                      <div className="font-medium text-xs">{supplement.supplement_name}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {supplement.dosage} • {supplement.frequency}
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {new Date(supplement.taken_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground">No supplements logged recently</div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
     </div>

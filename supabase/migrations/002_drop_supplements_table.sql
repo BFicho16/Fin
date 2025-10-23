@@ -1,0 +1,31 @@
+-- Drop supplements table as supplements are now tracked as routine items
+-- This migration removes the supplements table since all supplement tracking
+-- has been migrated to the routine_items system with item_type='supplement'
+
+-- Drop the supplements table
+DROP TABLE IF EXISTS supplements;
+
+-- Note: If you have existing data in the supplements table that you want to preserve,
+-- you should first migrate it to routine_items before running this migration.
+-- Example migration query (run before dropping the table):
+-- 
+-- INSERT INTO user_routines (user_id, routine_name, description, status, schedule_type, schedule_config, time_of_day)
+-- SELECT DISTINCT user_id, 'Daily Supplements', 'Migrated from supplements table', 'active', 'weekly', '{"days_of_week": [0,1,2,3,4,5,6]}', 'morning'
+-- FROM supplements
+-- WHERE NOT EXISTS (
+--   SELECT 1 FROM user_routines 
+--   WHERE user_routines.user_id = supplements.user_id 
+--   AND user_routines.routine_name = 'Daily Supplements'
+-- );
+--
+-- INSERT INTO routine_items (routine_id, item_name, item_type, serving_size, notes, habit_classification, created_at)
+-- SELECT 
+--   ur.id,
+--   s.supplement_name,
+--   'supplement',
+--   s.dosage,
+--   s.notes,
+--   'good',
+--   s.taken_at
+-- FROM supplements s
+-- JOIN user_routines ur ON ur.user_id = s.user_id AND ur.routine_name = 'Daily Supplements';

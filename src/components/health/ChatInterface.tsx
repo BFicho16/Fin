@@ -264,13 +264,9 @@ export default function ChatInterface({ userId, userEmail, threadId, isTrackerOp
             <p className="text-xs mt-1.5">Loading your chat history...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground mt-6">
-            <BotIcon className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm font-medium">Welcome to your Longevity Coach!</p>
-            <p className="text-xs mt-1.5">
-              I&apos;m here to help you achieve optimal health and longevity. Ask me about research, nutrition, exercise, 
-              wellness planning, or share your health information to get started.
-            </p>
+          <div className="text-center mt-6">
+            <p className="text-sm font-bold text-primary mb-2">Longevity Coach</p>
+            <p className="text-2xl font-medium">Share updates to your routine or habits and I'll make suggestions</p>
           </div>
         ) : null}
 
@@ -332,7 +328,7 @@ export default function ChatInterface({ userId, userEmail, threadId, isTrackerOp
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyPress={handleKeyPress}
-            placeholder="How was your day?"
+            placeholder="Tell me about your health goals and habits..."
             className="flex-1 resize-none overflow-hidden"
             rows={1}
             disabled={isLoading}

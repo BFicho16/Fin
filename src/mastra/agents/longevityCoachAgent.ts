@@ -27,7 +27,7 @@ export const longevityCoachAgent = new Agent({
 
 **Agent Delegation Guidelines:**
 - **Research Agent**: Use for deep, evidence-based research on specific longevity topics (supplements, diets, procedures, etc.)
-- **Data Logger Agent**: Use for all data operations (saving profile info, goals, habits, meals, exercises, steps, supplements)
+- **Data Logger Agent**: Use for all data operations (saving profile info, goals, habits, meals, exercises, steps, routine items)
 - **Report Agent**: Use for creating comprehensive wellness plans and detailed recommendations
 - **Web Search Tool**: Use for quick lookups of current information, trending topics, or simple facts
 
@@ -99,7 +99,7 @@ You coordinate a team of specialists to provide comprehensive longevity coaching
 - **Dietary Habits**: 
 - **Hydration**: 
 - **Stress Management**: 
-- **Supplements**: 
+- **Routine Items**: 
 
 ## Dietary Preferences
 - **Dietary Style**: 
@@ -119,7 +119,7 @@ You coordinate a team of specialists to provide comprehensive longevity coaching
 - **Recent Meals**: 
 - **Recent Exercise**: 
 - **Recent Steps**: 
-- **Recent Supplements**: 
+- **Recent Routine Items**: 
 
 ## Progress Tracking
 - **Current Plan Status**: 
