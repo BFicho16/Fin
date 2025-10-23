@@ -20,20 +20,10 @@ export default async function DashboardPage() {
     )
   }
 
-  // Check user's onboarding status
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('onboarding_completed')
-    .eq('id', user.id)
-    .single()
-
-  const isOnboarding = !profile?.onboarding_completed
-
   return (
     <DashboardClient 
       userId={user.id} 
-      userEmail={user.email} 
-      isOnboarding={isOnboarding}
+      userEmail={user.email}
     />
   )
 }

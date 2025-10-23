@@ -4,16 +4,13 @@ import { useState } from 'react';
 import ChatInterface from '@/components/health/ChatInterface';
 import DashboardPanel from '@/components/health/DashboardPanel';
 import MobileDashboardDrawer from '@/components/health/MobileDashboardDrawer';
-import OnboardingProgressTracker from '@/components/onboarding/OnboardingProgressTracker';
-import MobileOnboardingDrawer from '@/components/onboarding/MobileOnboardingDrawer';
 
 interface DashboardClientProps {
   userId: string;
   userEmail: string;
-  isOnboarding: boolean;
 }
 
-export default function DashboardClient({ userId, userEmail, isOnboarding }: DashboardClientProps) {
+export default function DashboardClient({ userId, userEmail }: DashboardClientProps) {
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
 
   return (
@@ -24,35 +21,23 @@ export default function DashboardClient({ userId, userEmail, isOnboarding }: Das
           <div className="flex-1 min-h-0">
             <ChatInterface 
               userId={userId} 
-              userEmail={userEmail} 
-              isOnboarding={isOnboarding}
+              userEmail={userEmail}
               isTrackerOpen={isTrackerOpen}
               onTrackerOpenChange={setIsTrackerOpen}
             />
           </div>
         </div>
 
-        {/* Right Column - Dashboard Panel or Onboarding Progress Tracker */}
+        {/* Right Column - Dashboard Panel */}
         <div className="hidden lg:block overflow-y-auto">
-          {isOnboarding ? (
-            <OnboardingProgressTracker userId={userId} />
-          ) : (
-            <DashboardPanel userId={userId} />
-          )}
+          <DashboardPanel userId={userId} />
         </div>
       </div>
 
-      {/* Mobile Dashboard Drawer - only show if not onboarding */}
-      {!isOnboarding && <MobileDashboardDrawer userId={userId} />}
-
-      {/* Mobile Onboarding Drawer - only show if onboarding */}
-      {isOnboarding && (
-        <MobileOnboardingDrawer 
-          userId={userId} 
-          isOpen={isTrackerOpen}
-          onOpenChange={setIsTrackerOpen}
-        />
-      )}
+      {/* Mobile Dashboard Drawer */}
+      <MobileDashboardDrawer userId={userId} />
     </>
   );
 }
+
+

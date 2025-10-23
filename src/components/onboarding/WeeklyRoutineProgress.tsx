@@ -48,20 +48,45 @@ interface RoutineItem {
 }
 
 interface WeeklyRoutineProgressProps {
-  userId: string;
+  userId?: string;
   routines: Routine[];
+  isGuest?: boolean;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_ABBREVIATIONS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export default function WeeklyRoutineProgress({ userId, routines }: WeeklyRoutineProgressProps) {
+export default function WeeklyRoutineProgress({ userId, routines, isGuest }: WeeklyRoutineProgressProps) {
   const [progress, setProgress] = useState(calculateWeeklyRoutineProgress(routines));
   const [activeTab, setActiveTab] = useState('Sunday');
 
   // Update progress when routines change
   useEffect(() => {
-    setProgress(calculateWeeklyRoutineProgress(routines));
+    console.log('🔄 WeeklyRoutineProgress: Received routines:', {
+      count: routines.length,
+      routines: routines.map(r => ({
+        name: r.routine_name,
+        day: r.day_of_week,
+        timeOfDay: r.time_of_day,
+        itemsCount: r.routine_items?.length || 0,
+        items: r.routine_items?.map((item: any) => item.item_name) || []
+      }))
+    });
+    
+    const newProgress = calculateWeeklyRoutineProgress(routines);
+    console.log('📊 WeeklyRoutineProgress: Calculated progress:', {
+      totalSlotsFilled: newProgress.totalSlotsFilled,
+      isComplete: newProgress.isComplete,
+      days: newProgress.days.map(d => ({
+        day: d.dayName,
+        morning: { exists: d.morning.exists, hasItems: d.morning.hasItems, itemCount: d.morning.itemCount },
+        midday: { exists: d.midday.exists, hasItems: d.midday.hasItems, itemCount: d.midday.itemCount },
+        night: { exists: d.night.exists, hasItems: d.night.hasItems, itemCount: d.night.itemCount },
+        workout: { exists: d.workout.exists, hasItems: d.workout.hasItems, itemCount: d.workout.itemCount }
+      }))
+    });
+    
+    setProgress(newProgress);
   }, [routines]);
 
   const getTimeOfDayIcon = (timeOfDay: string) => {
@@ -112,6 +137,11 @@ export default function WeeklyRoutineProgress({ userId, routines }: WeeklyRoutin
     const slotStatus = getRoutineSlotStatus(dayStatus, timeSlot);
     const routine = dayStatus[timeSlot].routine;
     const items = routine?.routine_items || [];
+    
+    // Debug logging for routine items
+    if (items.length > 0) {
+      console.log(`🎯 WeeklyRoutineProgress: ${dayStatus.dayName} ${timeSlot} has ${items.length} items:`, items.map(i => i.item_name));
+    }
 
     return (
       <Card 
@@ -138,7 +168,7 @@ export default function WeeklyRoutineProgress({ userId, routines }: WeeklyRoutin
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          {items.length > 0 ? (
+          {items.length > 0 && (
             <div className="space-y-1">
               {items.slice(0, 3).map((item, index) => (
                 <div key={index} className="text-xs text-muted-foreground">
@@ -152,11 +182,6 @@ export default function WeeklyRoutineProgress({ userId, routines }: WeeklyRoutin
                   +{items.length - 3} more...
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2 py-4">
-              <Send className="h-6 w-6" />
-              <span className="text-center">Chat with your Fin Onboarding Agent to add items to your routines</span>
             </div>
           )}
         </CardContent>
@@ -213,7 +238,7 @@ export default function WeeklyRoutineProgress({ userId, routines }: WeeklyRoutin
               
               return (
                 <TabsContent key={dayName} value={dayName}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {(['morning', 'midday', 'night', 'workout'] as const).map(timeSlot => 
                       renderRoutineCard(dayStatus, timeSlot)
                     )}

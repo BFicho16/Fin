@@ -24,18 +24,43 @@ export default function SignupPage() {
     setError('')
     setMessage('')
 
-    const { error } = await supabase.auth.signUp({
+    const guestSessionId = sessionStorage.getItem('guestSessionId')
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     })
 
     if (error) {
       setError(error.message)
-    } else {
-      setMessage('Check your email for the confirmation link!')
+      setLoading(false)
+      return
     }
 
-    setLoading(false)
+    if (data.user && guestSessionId) {
+      // Migrate guest data
+      const migrateRes = await fetch('/api/user/migrate-guest-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestSessionId }),
+      })
+      
+      if (!migrateRes.ok) {
+        setError('Failed to migrate your data. Please contact support.')
+        setLoading(false)
+        return
+      }
+      
+      // Clear session
+      sessionStorage.removeItem('guestSessionId')
+      
+      // Redirect to dashboard (don't reset loading state here)
+      router.push('/dashboard')
+      return // Exit early to prevent setLoading(false) from running
+    } else {
+      setMessage('Check your email for confirmation link!')
+      setLoading(false)
+    }
   }
 
   return (

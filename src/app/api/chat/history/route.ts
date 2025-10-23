@@ -13,17 +13,8 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check user's onboarding status
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .single();
-
-    // Get the appropriate agent based on onboarding status
-    const agent = profile?.onboarding_completed 
-      ? mastra.getAgent('longevityCoachAgent')
-      : mastra.getAgent('onboardingAgent');
+    // All authenticated users use longevity coach
+    const agent = mastra.getAgent('longevityCoachAgent');
     
     const memory = await agent.getMemory();
 
@@ -32,13 +23,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Use the same thread ID format as the chat API
-    const threadId = profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`;
+    const threadId = `longevity-coach-${user.id}`;
 
     // Query the memory for messages in this thread
     try {
       const { uiMessages } = await memory.query({
         threadId,
-        resourceId: profile?.onboarding_completed ? `longevity-coach-${user.id}` : `onboarding-${user.id}`,
+        resourceId: `longevity-coach-${user.id}`,
         selectBy: {
           last: 50, // Get last 50 messages
         },
