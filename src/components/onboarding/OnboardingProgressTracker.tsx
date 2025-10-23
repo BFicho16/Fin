@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { CheckCircle, Circle, ChevronDown, ChevronRight, Loader2, User, Heart, TrendingUp, Sparkles } from 'lucide-react';
+import { CheckCircle, Circle, ChevronDown, ChevronRight, Loader2, User, Heart, TrendingUp, SquareCheck } from 'lucide-react';
 import { useOnboardingProgress } from '@/lib/hooks/useOnboardingProgress';
 import { getAllCategories } from './onboardingConfig';
 import WeeklyRoutineProgress from './WeeklyRoutineProgress';
@@ -96,7 +96,7 @@ export default function OnboardingProgressTracker({ userId }: OnboardingProgress
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center space-x-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <SquareCheck className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Longevity Profile</h2>
         </div>
       </div>

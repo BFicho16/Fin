@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Menu } from 'lucide-react';
+import { Send, User, Bot, Menu, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
@@ -224,7 +224,8 @@ export default function ChatInterface({ userId, userEmail, threadId, isOnboardin
       {/* Consolidated Header */}
       <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center space-x-2">
+            {isOnboarding && <Sparkles className="h-4 w-4 text-primary" />}
             <h3 className="text-xs font-medium">
               {isOnboarding ? 'Onboarding Interview' : 'Longevity Coach'}
             </h3>
