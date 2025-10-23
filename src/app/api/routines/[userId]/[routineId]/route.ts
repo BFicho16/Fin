@@ -123,3 +123,4 @@ export async function DELETE(
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

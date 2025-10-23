@@ -1,7 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
-import { PostgresStore, PgVector } from '@mastra/pg';
+import { postgresStore, pgVector } from '../storage';
 import { webSearchTool } from '../tools/webSearchTool';
 import { researchAgent } from './researchAgent';
 import { reportAgent } from './reportAgent';
@@ -66,12 +66,8 @@ You coordinate a team of specialists to provide comprehensive longevity coaching
     webSearchTool,
   },
   memory: new Memory({
-    storage: new PostgresStore({
-      connectionString: process.env.DATABASE_URL!,
-    }),
-    vector: new PgVector({
-      connectionString: process.env.DATABASE_URL!,
-    }),
+    storage: postgresStore,
+    vector: pgVector,
     embedder: google.textEmbeddingModel('text-embedding-004'),
     options: {
       workingMemory: {

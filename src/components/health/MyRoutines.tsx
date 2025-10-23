@@ -50,7 +50,7 @@ interface Routine {
     days_of_month?: number[];
     days_of_year?: string[];
   };
-  time_of_day?: 'morning' | 'lunch' | 'night' | 'workout';
+  time_of_day?: 'morning' | 'midday' | 'night' | 'workout';
   created_at: string;
   updated_at: string;
   routine_items?: RoutineItem[];
@@ -193,7 +193,7 @@ export default function MyRoutines({ userId }: MyRoutinesProps) {
     switch (timeOfDay) {
       case 'morning':
         return <Sun className="h-4 w-4 text-yellow-500" />;
-      case 'lunch':
+      case 'midday':
         return <Utensils className="h-4 w-4 text-orange-500" />;
       case 'night':
         return <Moon className="h-4 w-4 text-blue-500" />;
@@ -208,8 +208,8 @@ export default function MyRoutines({ userId }: MyRoutinesProps) {
     switch (timeOfDay) {
       case 'morning':
         return 'Morning';
-      case 'lunch':
-        return 'Lunch';
+      case 'midday':
+        return 'Midday';
       case 'night':
         return 'Night';
       case 'workout':

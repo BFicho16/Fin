@@ -29,7 +29,7 @@ export default function MobileDashboardDrawer({ userId }: MobileDashboardDrawerP
         </SheetTrigger>
         <SheetContent 
           side="right" 
-          className="w-[90vw] sm:w-[400px] p-0 transition-all duration-300"
+          className="w-full sm:w-[400px] p-0 transition-all duration-300"
         >
           <div className="h-full overflow-y-auto">
             <Card className="h-full m-4 shadow-xl border-0">

@@ -269,7 +269,7 @@ export const createRoutineTool = createTool({
         days_of_month: z.array(z.number().min(1).max(31)).optional(),
         days_of_year: z.array(z.string()).optional(),
       }),
-      time_of_day: z.enum(['morning', 'lunch', 'night', 'workout']).optional(),
+      time_of_day: z.enum(['morning', 'midday', 'night', 'workout']).optional(),
     }),
   }),
   outputSchema: z.object({
@@ -321,7 +321,7 @@ export const updateRoutineTool = createTool({
         days_of_month: z.array(z.number().min(1).max(31)).optional(),
         days_of_year: z.array(z.string()).optional(),
       }).optional(),
-      time_of_day: z.enum(['morning', 'lunch', 'night', 'workout']).optional(),
+      time_of_day: z.enum(['morning', 'midday', 'night', 'workout']).optional(),
     }),
   }),
   outputSchema: z.object({
@@ -841,7 +841,7 @@ export const logMealTool = createTool({
   id: 'log-meal',
   description: 'Log meals with nutrition data',
   inputSchema: z.object({
-    meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+    meal_type: z.enum(['breakfast', 'midday', 'dinner', 'snack']),
     foods: z.array(z.object({
       name: z.string(),
       calories: z.number(),

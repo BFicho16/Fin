@@ -12,6 +12,7 @@ Make sure your `.env` file contains the following variables (copy from `.env.exa
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+DATABASE_URL="your-supabase-database-connection-string"
 
 # Existing variables
 GOOGLE_GENERATIVE_AI_API_KEY="your-google-gemini-api-key"

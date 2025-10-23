@@ -72,7 +72,7 @@ export async function POST(
     }
 
     // Validate meal_type
-    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const validMealTypes = ['breakfast', 'midday', 'dinner', 'snack'];
     if (!validMealTypes.includes(meal.meal_type)) {
       return Response.json({ error: 'Invalid meal_type' }, { status: 400 });
     }

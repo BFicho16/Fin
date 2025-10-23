@@ -1,5 +1,5 @@
 import { Mastra } from '@mastra/core';
-import { LibSQLStore } from '@mastra/libsql';
+import { postgresStore } from './storage';
 import { researchWorkflow } from './workflows/researchWorkflow';
 import { learningExtractionAgent } from './agents/learningExtractionAgent';
 import { evaluationAgent } from './agents/evaluationAgent';
@@ -12,13 +12,9 @@ import { onboardingAgent } from './agents/onboardingAgent';
 import { generateReportWorkflow } from './workflows/generateReportWorkflow';
 import { healthDataCollectionWorkflow } from './workflows/healthDataCollectionWorkflow';
 
-// For serverless deployment, use in-memory storage or remove storage entirely
-// LibSQLStore with file URLs doesn't work in serverless environments
+// Use shared PostgreSQL storage instance
 export const mastra = new Mastra({
-  // Remove storage for serverless deployment
-  // storage: new LibSQLStore({
-  //   url: 'file:../mastra.db',
-  // }),
+  storage: postgresStore,
   agents: {
     researchAgent,
     reportAgent,
@@ -38,10 +34,7 @@ export const mastra = new Mastra({
 // Helper function to create user-specific Mastra instance
 export function createUserMastra(userId: string) {
   return new Mastra({
-    // Remove storage for serverless deployment
-    // storage: new LibSQLStore({
-    //   url: `file:../mastra_${userId}.db`, // User-specific database
-    // }),
+    storage: postgresStore,
     agents: {
       researchAgent,
       reportAgent,

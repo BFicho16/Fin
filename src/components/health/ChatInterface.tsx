@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MessageContent } from './MessageContent';
+import CompactOnboardingTracker from '@/components/onboarding/CompactOnboardingTracker';
 
 // Type assertion to fix React 19 type conflicts
 const CardComponent = Card as any;
@@ -46,9 +47,11 @@ interface ChatInterfaceProps {
   userEmail: string;
   threadId?: string;
   isOnboarding?: boolean;
+  isTrackerOpen?: boolean;
+  onTrackerOpenChange?: (open: boolean) => void;
 }
 
-export default function ChatInterface({ userId, userEmail, threadId, isOnboarding = false }: ChatInterfaceProps) {
+export default function ChatInterface({ userId, userEmail, threadId, isOnboarding = false, isTrackerOpen = false, onTrackerOpenChange }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -244,6 +247,16 @@ export default function ChatInterface({ userId, userEmail, threadId, isOnboardin
           </DropdownMenuComponent>
         </div>
       </div>
+
+      {/* Compact Onboarding Tracker - Mobile Only */}
+      {isOnboarding && onTrackerOpenChange && (
+        <div className="lg:hidden px-3 py-2 border-b">
+          <CompactOnboardingTracker 
+            userId={userId} 
+            onOpen={() => onTrackerOpenChange(true)} 
+          />
+        </div>
+      )}
 
       {/* Messages */}
       <CardContentComponent ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 min-h-0">

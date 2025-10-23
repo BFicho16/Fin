@@ -221,7 +221,7 @@ export default function ActivityLogger({ userId }: ActivityLoggerProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="breakfast">Breakfast</SelectItem>
-                    <SelectItem value="lunch">Lunch</SelectItem>
+                    <SelectItem value="midday">Midday</SelectItem>
                     <SelectItem value="dinner">Dinner</SelectItem>
                     <SelectItem value="snack">Snack</SelectItem>
                   </SelectContent>
