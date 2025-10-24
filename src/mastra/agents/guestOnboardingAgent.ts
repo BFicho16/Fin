@@ -1,7 +1,6 @@
 import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
-import { postgresStore, pgVector } from '../storage';
 import {
   getGuestDataTool,
   updateGuestDataTool,
