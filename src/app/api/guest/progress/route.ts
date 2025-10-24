@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { calculateWeeklyRoutineProgress } from '@/lib/routineProgress';
 
 export async function GET(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('🔍 Guest Progress API: Creating Supabase client...');
-    const supabase = createClient();
+    const supabase = await createClient();
     console.log('✅ Guest Progress API: Supabase client created successfully');
     console.log('🔍 Guest Progress API: About to query database for session:', sessionId);
     
@@ -144,7 +144,14 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
     
-    return Response.json(response);
+    try {
+      const jsonResponse = Response.json(response);
+      console.log('✅ Guest Progress API: Response created successfully');
+      return jsonResponse;
+    } catch (jsonError) {
+      console.error('❌ Guest Progress API: JSON serialization error:', jsonError);
+      return Response.json({ error: 'Response serialization failed' }, { status: 500 });
+    }
   } catch (error) {
     console.error('💥 Guest Progress API: Unexpected error:', {
       error: error,

@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "mastra": {
+    "vercel": {
       "command": "npx",
-      "args": ["-y", "@mastra/mcp-docs-server"]
+      "args": ["@vercel/mcp-server"]
     }
   }
 }
