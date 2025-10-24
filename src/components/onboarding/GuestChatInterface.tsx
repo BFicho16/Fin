@@ -261,7 +261,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   };
 
   return (
-    <CardComponent className="flex flex-col h-full max-h-screen overflow-hidden">
+    <CardComponent className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
         <div className="flex items-center justify-between">
