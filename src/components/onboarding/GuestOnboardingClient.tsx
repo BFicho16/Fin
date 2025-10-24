@@ -7,7 +7,7 @@ import GuestOnboardingTracker from '@/components/onboarding/GuestOnboardingTrack
 import MobileGuestOnboardingDrawer from '@/components/onboarding/MobileGuestOnboardingDrawer';
 
 export default function GuestOnboardingClient() {
-  const [guestSessionId, setGuestSessionId] = useState<string | null>('af144031-5d3e-437f-8503-007faae2f549'); // TEMP: Test with session that has routine data
+  const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
