@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MessageContent } from './MessageContent';
+import { useMobileKeyboard } from '@/lib/hooks/useMobileKeyboard';
 
 // Type assertion to fix React 19 type conflicts
 const CardComponent = Card as any;
@@ -59,6 +60,7 @@ export default function ChatInterface({ userId, userEmail, threadId, isTrackerOp
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
   const supabase = createClient();
+  const { isKeyboardOpen } = useMobileKeyboard();
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -223,7 +225,7 @@ export default function ChatInterface({ userId, userEmail, threadId, isTrackerOp
   };
 
   return (
-    <CardComponent className="flex flex-col h-full max-h-screen overflow-hidden">
+    <CardComponent className={`flex flex-col h-full overflow-hidden max-h-full ${isKeyboardOpen ? 'mobile-keyboard-open' : 'mobile-keyboard-aware'}`}>
       {/* Consolidated Header */}
       <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
         <div className="flex items-center justify-between">
@@ -328,7 +330,7 @@ export default function ChatInterface({ userId, userEmail, threadId, isTrackerOp
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyPress={handleKeyPress}
-            placeholder="Tell me about your health goals and habits..."
+            placeholder="Tell me about your routine and habits..."
             className="flex-1 resize-none overflow-hidden"
             rows={1}
             disabled={isLoading}

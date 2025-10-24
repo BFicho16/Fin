@@ -51,12 +51,72 @@
   * {
     border-color: hsl(var(--border));
   }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     font-size: 14px;
     line-height: 1.4;
+  }
+}
+
+@layer utilities {
+  /* Mobile viewport utilities */
+  .h-screen-mobile {
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  /* Prevent scrolling on mobile when keyboard is open */
+  .mobile-no-scroll {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+  
+  /* Mobile keyboard handling */
+  .mobile-keyboard-aware {
+    height: 100vh;
+    height: 100dvh;
+    transition: height 0.3s ease;
+  }
+  
+  /* When keyboard is open, use smaller viewport */
+  .mobile-keyboard-open {
+    height: 100vh;
+    height: calc(100dvh - env(keyboard-inset-height, 0px));
+  }
+  
+  /* Additional mobile viewport fixes */
+  @supports (height: 100dvh) {
+    .mobile-keyboard-aware {
+      height: 100dvh;
+    }
+    .mobile-keyboard-open {
+      height: calc(100dvh - env(keyboard-inset-height, 0px));
+    }
+  }
+  
+  /* Fallback for older browsers */
+  @supports not (height: 100dvh) {
+    .mobile-keyboard-aware {
+      height: 100vh;
+    }
+    .mobile-keyboard-open {
+      height: 100vh;
+    }
   }
 }
 

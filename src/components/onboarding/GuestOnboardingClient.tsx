@@ -71,7 +71,7 @@ export default function GuestOnboardingClient() {
   };
   
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 p-4 overflow-hidden" style={{ height: '100dvh', boxSizing: 'border-box' }}>
+    <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 p-4 h-full overflow-hidden">
       <div className="flex-1 min-h-0">
         <GuestChatInterface 
           guestSessionId={guestSessionId}

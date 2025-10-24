@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageContent } from '@/components/health/MessageContent';
 import SuggestedMessagesList from './SuggestedMessagesList';
+import { useMobileKeyboard } from '@/lib/hooks/useMobileKeyboard';
 
 // Type assertion to fix React 19 type conflicts
 const CardComponent = Card as any;
@@ -44,6 +45,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   const [isDelayingSuggestedMessages, setIsDelayingSuggestedMessages] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { isKeyboardOpen } = useMobileKeyboard();
 
 
   const scrollToBottom = () => {
@@ -261,7 +263,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   };
 
   return (
-    <CardComponent className="flex flex-col h-full overflow-hidden">
+    <CardComponent className={`flex flex-col h-full overflow-hidden max-h-full ${isKeyboardOpen ? 'mobile-keyboard-open' : 'mobile-keyboard-aware'}`}>
       {/* Header */}
       <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
         <div className="flex items-center justify-between">
@@ -364,7 +366,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyPress={handleKeyPress}
-            placeholder="Tell me about yourself and your habits..."
+            placeholder="Tell me about yourself..."
             className="flex-1 resize-none overflow-hidden"
             rows={1}
             disabled={isLoading}
