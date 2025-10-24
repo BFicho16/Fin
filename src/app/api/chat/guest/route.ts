@@ -219,8 +219,11 @@ If your working memory or semantic recall contains information that conflicts wi
           controller.close();
         } catch (error) {
           console.error('Error in guest chat:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          const errorStack = error instanceof Error ? error.stack : undefined;
+          console.error('Full error details:', { errorMessage, errorStack, error });
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: 'An error occurred' })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({ error: errorMessage, details: errorStack })}\n\n`)
           );
           controller.close();
         }
@@ -236,6 +239,13 @@ If your working memory or semantic recall contains information that conflicts wi
     });
   } catch (error) {
     console.error('Error in guest chat API:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Full API error details:', { errorMessage, errorStack, error });
+    return Response.json({ 
+      error: 'Internal server error', 
+      details: errorMessage,
+      stack: errorStack 
+    }, { status: 500 });
   }
 }
