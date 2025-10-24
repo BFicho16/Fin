@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { mastra } from '@/mastra';
+import { guestMastra } from '@/mastra';
 import { RuntimeContext } from '@mastra/core/runtime-context';
 
 export async function POST(request: NextRequest) {
@@ -177,7 +177,7 @@ If your working memory or semantic recall contains information that conflicts wi
     const contextMessage = await getSessionContext(sessionId);
 
     // Get guest onboarding agent
-    const agent = mastra.getAgent('guestOnboardingAgent');
+    const agent = guestMastra.getAgent('guestOnboardingAgent');
     
     // Runtime context with ONLY guest session ID
     const runtimeContext = new RuntimeContext();

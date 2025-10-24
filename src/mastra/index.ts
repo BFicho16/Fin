@@ -12,7 +12,7 @@ import { guestOnboardingAgent } from './agents/guestOnboardingAgent';
 import { generateReportWorkflow } from './workflows/generateReportWorkflow';
 import { healthDataCollectionWorkflow } from './workflows/healthDataCollectionWorkflow';
 
-// Use shared PostgreSQL storage instance
+// Main Mastra instance with storage for authenticated users
 export const mastra = new Mastra({
   storage: postgresStore,
   agents: {
@@ -23,9 +23,18 @@ export const mastra = new Mastra({
     webSummarizationAgent,
     longevityCoachAgent,
     dataLoggerAgent,
-    guestOnboardingAgent,
   },
   workflows: { generateReportWorkflow, researchWorkflow, healthDataCollectionWorkflow },
+  telemetry: {
+    enabled: false,
+  },
+});
+
+// Guest onboarding instance without storage (uses Supabase directly)
+export const guestMastra = new Mastra({
+  agents: {
+    guestOnboardingAgent,
+  },
   telemetry: {
     enabled: false,
   },
