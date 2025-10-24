@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { calculateWeeklyRoutineProgress } from '@/lib/routineProgress';
 
 export async function GET(request: NextRequest) {
+  console.log('🚀 Guest Progress API: Starting request');
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     
-    console.log('🔍 Guest Progress API: Request received for sessionId:', sessionId);
+    console.log('🔍 Guest Progress API: Request details:', {
+      url: request.url,
+      sessionId,
+      searchParams: Object.fromEntries(searchParams.entries()),
+      timestamp: new Date().toISOString()
+    });
     
     if (!sessionId) {
       console.log('❌ Guest Progress API: Missing sessionId');
@@ -16,16 +21,9 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('🔍 Guest Progress API: Creating Supabase client...');
-    let supabase;
-    try {
-      supabase = await createServerClient();
-      console.log('✅ Guest Progress API: Server client created successfully');
-    } catch (serverError) {
-      console.warn('⚠️ Guest Progress API: Server client failed, falling back to browser client:', serverError);
-      supabase = createBrowserClient();
-      console.log('✅ Guest Progress API: Browser client created successfully');
-    }
-    console.log('🔍 Guest Progress API: Querying database for session:', sessionId);
+    const supabase = createClient();
+    console.log('✅ Guest Progress API: Supabase client created successfully');
+    console.log('🔍 Guest Progress API: About to query database for session:', sessionId);
     
     const { data: session, error: queryError } = await supabase
       .from('guest_onboarding_sessions')
@@ -33,15 +31,28 @@ export async function GET(request: NextRequest) {
       .eq('session_id', sessionId)
       .single();
     
+    console.log('📊 Guest Progress API: Database query completed:', {
+      hasData: !!session,
+      hasError: !!queryError,
+      errorMessage: queryError?.message,
+      sessionId: session?.session_id,
+      timestamp: new Date().toISOString()
+    });
+    
     if (queryError) {
-      console.error('❌ Guest Progress API: Database query error:', queryError);
+      console.error('❌ Guest Progress API: Database query error:', {
+        error: queryError,
+        message: queryError.message,
+        details: queryError.details,
+        hint: queryError.hint,
+        code: queryError.code
+      });
       return Response.json({ error: 'Database query failed' }, { status: 500 });
     }
     
     if (!session) {
       console.log('ℹ️ Guest Progress API: Session not found, returning empty progress for new session:', sessionId);
-      // Return empty progress for new sessions
-      return Response.json({
+      const emptyResponse = {
         profile: null,
         healthMetrics: [],
         dietaryPreferences: {},
@@ -57,7 +68,9 @@ export async function GET(request: NextRequest) {
           },
           isComplete: false,
         },
-      });
+      };
+      console.log('📤 Guest Progress API: Returning empty response for new session');
+      return Response.json(emptyResponse);
     }
     
     console.log('✅ Guest Progress API: Session found:', {
@@ -109,7 +122,7 @@ export async function GET(request: NextRequest) {
       });
     });
     
-    return Response.json({
+    const response = {
       profile: session?.profile,
       healthMetrics: session?.health_metrics,
       dietaryPreferences: session?.dietary_preferences,
@@ -121,9 +134,24 @@ export async function GET(request: NextRequest) {
         routineProgress,
         isComplete: hasProfile && hasWeight && hasHeight && routineProgress.isComplete,
       },
+    };
+    
+    console.log('📤 Guest Progress API: Returning response:', {
+      hasProfile: !!response.profile,
+      healthMetricsCount: response.healthMetrics?.length || 0,
+      routinesCount: response.routines?.length || 0,
+      progressComplete: response.progress.isComplete,
+      timestamp: new Date().toISOString()
     });
+    
+    return Response.json(response);
   } catch (error) {
-    console.error('Error fetching guest progress:', error);
+    console.error('💥 Guest Progress API: Unexpected error:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
