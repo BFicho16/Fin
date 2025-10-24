@@ -224,29 +224,5 @@ Once onboarding is complete, inform the user they can click "Get Started" to cre
     checkGuestOnboardingProgressTool,
     deleteGuestRoutineItemTool,
   },
-  memory: new Memory({
-    storage: postgresStore,
-    vector: pgVector,
-    embedder: google.textEmbeddingModel('text-embedding-004'),
-    options: {
-      workingMemory: { 
-        enabled: true, 
-        scope: 'resource',
-        template: `# Guest Onboarding Session
-
-## Data Source
-All current session data is provided in system messages before each user interaction.
-
-## Conversation State
-- Recent actions taken:
-- Information collected:
-- Completion status:
-- Next steps:
-`,
-      },
-      lastMessages: 20,
-      semanticRecall: { topK: 3, messageRange: 2, scope: 'resource' },
-      threads: { generateTitle: true },
-    },
-  }),
+  // No memory storage for guest onboarding - relies on system context
 });

@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 
 // ===== READ ALL GUEST DATA =====
 export const getGuestDataTool = createTool({
@@ -17,7 +17,7 @@ export const getGuestDataTool = createTool({
     const guestSessionId = runtimeContext?.get('guestSessionId');
     if (!guestSessionId) throw new Error('No guest session ID');
     
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data } = await supabase
       .from('guest_onboarding_sessions')
       .select('*')
@@ -83,7 +83,7 @@ export const updateGuestDataTool = createTool({
     if (!guestSessionId) {
       throw new Error('No guest session ID found in runtime context');
     }
-    const supabase = await createClient();
+    const supabase = createClient();
     
     // Get current session data
     const { data: session } = await supabase
@@ -189,7 +189,7 @@ export const deleteGuestRoutineItemTool = createTool({
     if (!guestSessionId) {
       throw new Error('No guest session ID found in runtime context');
     }
-    const supabase = await createClient();
+    const supabase = createClient();
     
     // Get current session data
     const { data: session } = await supabase
@@ -258,7 +258,7 @@ export const checkGuestOnboardingProgressTool = createTool({
   description: 'Check onboarding completion status',
   execute: async ({ runtimeContext }) => {
     const guestSessionId = runtimeContext?.get('guestSessionId');
-    const supabase = await createClient();
+    const supabase = createClient();
     
     const { data } = await supabase
       .from('guest_onboarding_sessions')
