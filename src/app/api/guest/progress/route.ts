@@ -7,20 +7,56 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     
+    console.log('🔍 Guest Progress API: Request received for sessionId:', sessionId);
+    
     if (!sessionId) {
+      console.log('❌ Guest Progress API: Missing sessionId');
       return Response.json({ error: 'Missing sessionId' }, { status: 400 });
     }
     
     const supabase = await createClient();
-    const { data: session } = await supabase
+    console.log('🔍 Guest Progress API: Querying database for session:', sessionId);
+    
+    const { data: session, error: queryError } = await supabase
       .from('guest_onboarding_sessions')
       .select('*')
       .eq('session_id', sessionId)
       .single();
     
-    if (!session) {
-      return Response.json({ error: 'Session not found' }, { status: 404 });
+    if (queryError) {
+      console.error('❌ Guest Progress API: Database query error:', queryError);
+      return Response.json({ error: 'Database query failed' }, { status: 500 });
     }
+    
+    if (!session) {
+      console.log('ℹ️ Guest Progress API: Session not found, returning empty progress for new session:', sessionId);
+      // Return empty progress for new sessions
+      return Response.json({
+        profile: null,
+        healthMetrics: [],
+        dietaryPreferences: {},
+        routines: [],
+        progress: {
+          hasProfile: false,
+          hasHealthMetrics: false,
+          routinesComplete: false,
+          routineProgress: {
+            isComplete: false,
+            totalSlotsFilled: 0,
+            days: Array(7).fill({ morning: [], night: [], workout: [], midday: [] })
+          },
+          isComplete: false,
+        },
+      });
+    }
+    
+    console.log('✅ Guest Progress API: Session found:', {
+      sessionId: session.session_id,
+      hasProfile: !!session.profile,
+      hasHealthMetrics: !!session.health_metrics,
+      hasRoutines: !!session.routines,
+      routinesCount: session.routines?.length || 0
+    });
     
     // Calculate progress from JSON
     const hasProfile = session?.profile?.birth_date && session?.profile?.gender;
