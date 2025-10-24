@@ -9,7 +9,7 @@ import {
   deleteGuestRoutineItemTool,
 } from '../tools/guestOnboardingTools';
 
-const mainModel = google(process.env.MODEL || 'gemini-2.0-flash');
+const mainModel = google(process.env.MODEL || 'gemini-2.5-flash-lite');
 
 export const guestOnboardingAgent = new Agent({
   name: 'Guest Onboarding Agent',
