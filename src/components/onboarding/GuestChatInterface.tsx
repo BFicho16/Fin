@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Sparkles } from 'lucide-react';
+import { Send, User, Bot, Sparkles, BarChart3 } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,9 +31,10 @@ interface GuestChatInterfaceProps {
   guestSessionId: string | null;
   onSessionIdReceived: (sessionId: string) => void;
   progressData: any;
+  onOpenDrawer: () => void;
 }
 
-export default function GuestChatInterface({ guestSessionId, onSessionIdReceived, progressData }: GuestChatInterfaceProps) {
+export default function GuestChatInterface({ guestSessionId, onSessionIdReceived, progressData, onOpenDrawer }: GuestChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -268,13 +269,24 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="text-xs font-medium">Onboarding Interview</h3>
           </div>
-          <ButtonComponent 
-            variant="outline" 
-            size="sm"
-            onClick={() => window.location.href = '/login'}
-          >
-            Log In
-          </ButtonComponent>
+          <div className="flex items-center space-x-2">
+            <ButtonComponent 
+              variant="outline" 
+              size="sm"
+              onClick={onOpenDrawer}
+              className="lg:hidden"
+            >
+              <BarChart3 className="h-3.5 w-3.5 mr-1" />
+              Profile
+            </ButtonComponent>
+            <ButtonComponent 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.href = '/login'}
+            >
+              Log In
+            </ButtonComponent>
+          </div>
         </div>
       </div>
 

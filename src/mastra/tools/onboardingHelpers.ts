@@ -23,7 +23,10 @@ export const checkOnboardingProgressTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
 
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Fetch user routines with items
     const { data: routines, error } = await supabase
@@ -114,7 +117,10 @@ export const createWeeklyRoutineStructureTool = createTool({
   }),
   execute: async ({ context }) => {
     const { userId } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const timeSlots = [

@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import GuestChatInterface from '@/components/onboarding/GuestChatInterface';
 import GuestOnboardingTracker from '@/components/onboarding/GuestOnboardingTracker';
+import MobileGuestOnboardingDrawer from '@/components/onboarding/MobileGuestOnboardingDrawer';
 
 export default function GuestOnboardingClient() {
   const [guestSessionId, setGuestSessionId] = useState<string | null>('af144031-5d3e-437f-8503-007faae2f549'); // TEMP: Test with session that has routine data
   const [progressData, setProgressData] = useState<any>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   
   // Fetch initial progress data
@@ -75,14 +77,23 @@ export default function GuestOnboardingClient() {
           guestSessionId={guestSessionId}
           onSessionIdReceived={setGuestSessionId}
           progressData={progressData}
+          onOpenDrawer={() => setIsDrawerOpen(true)}
         />
       </div>
-      <div className="flex-1 min-h-0 lg:block">
+      <div className="flex-1 min-h-0 hidden lg:block">
         <GuestOnboardingTracker 
           progressData={progressData}
           onGetStarted={handleGetStarted}
         />
       </div>
+      
+      {/* Mobile Drawer */}
+      <MobileGuestOnboardingDrawer
+        progressData={progressData}
+        onGetStarted={handleGetStarted}
+        isOpen={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+      />
     </div>
   );
 }

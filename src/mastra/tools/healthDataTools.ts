@@ -24,7 +24,10 @@ export const getUserProfileTool = createTool({
     if (!userId) {
       throw new Error('User ID not found in runtime context');
     }
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('user_profiles')
@@ -65,7 +68,10 @@ export const updateUserProfileTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { updates } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     console.log('Updating user profile with:', updates, 'for user:', userId);
     
@@ -119,7 +125,10 @@ export const saveUserGoalsTool = createTool({
     const { goals } = context;
     
     // Get the authenticated Supabase client from runtime context
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const goal_ids: string[] = [];
     
@@ -173,7 +182,10 @@ export const getUserGoalsTool = createTool({
     if (!userId) {
       throw new Error('User ID not found in runtime context');
     }
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('user_goals')
@@ -217,7 +229,10 @@ export const saveDietaryPreferencesTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { preferences } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // First, check if preferences already exist
     const { data: existing } = await supabase
@@ -283,7 +298,10 @@ export const createRoutineTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { routine } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('user_routines')
@@ -334,7 +352,10 @@ export const updateRoutineTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { routineId, updates } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { error } = await supabase
       .from('user_routines')
@@ -378,7 +399,10 @@ export const getUserRoutinesTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { status } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     let query = supabase
       .from('user_routines')
@@ -431,7 +455,10 @@ export const addRoutineItemTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { routineId, item } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Verify routine ownership
     const { data: routine, error: routineError } = await supabase
@@ -497,7 +524,10 @@ export const updateRoutineItemTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { itemId, updates } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Verify item ownership through routine
     const { data: item, error: itemError } = await supabase
@@ -548,7 +578,10 @@ export const deleteRoutineItemTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { itemId } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Verify item ownership through routine
     const { data: item, error: itemError } = await supabase
@@ -602,7 +635,10 @@ export const markRoutineItemCompleteTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { itemId, completion_date, completion_status } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Verify item ownership through routine
     const { data: item, error: itemError } = await supabase
@@ -668,7 +704,10 @@ export const saveUserInteractionTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { interaction } = context;
-    const supabase = await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('user_interactions')
@@ -712,7 +751,10 @@ export const logHealthMetricTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { metric_type, value, unit, notes } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('health_metrics_log')
@@ -765,7 +807,10 @@ export const getHealthMetricsHistoryTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { metric_type, start_date, end_date, limit } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     let query = supabase
       .from('health_metrics_log')
@@ -811,7 +856,10 @@ export const getCurrentHealthMetricsTool = createTool({
     if (!userId) {
       throw new Error('User ID not found in runtime context');
     }
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     // Get the most recent entry for each metric type
     const { data, error } = await supabase
@@ -867,7 +915,10 @@ export const logMealTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { meal_type, foods, macros, total_calories, notes } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('meals')
@@ -919,7 +970,10 @@ export const getMealsHistoryTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { start_date, end_date, limit } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     let query = supabase
       .from('meals')
@@ -966,7 +1020,10 @@ export const logStepsTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { steps_count, distance_miles, calories_burned, logged_date } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('steps')
@@ -1015,7 +1072,10 @@ export const getStepsHistoryTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { start_date, end_date } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     let query = supabase
       .from('steps')
@@ -1063,7 +1123,10 @@ export const logExerciseTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { exercise_type, exercise_name, duration_minutes, intensity_level, calories_burned, notes } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     const { data, error } = await supabase
       .from('exercises')
@@ -1118,7 +1181,10 @@ export const getExercisesHistoryTool = createTool({
       throw new Error('User ID not found in runtime context');
     }
     const { start_date, end_date, exercise_type, limit } = context;
-    const supabase = runtimeContext?.get('supabase') || await createClient();
+    const supabase = runtimeContext?.get('supabase');
+    if (!supabase) {
+      throw new Error('Supabase client not found in runtime context');
+    }
     
     let query = supabase
       .from('exercises')
