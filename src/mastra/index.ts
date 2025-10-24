@@ -12,8 +12,9 @@ import { guestOnboardingAgent } from './agents/guestOnboardingAgent';
 import { generateReportWorkflow } from './workflows/generateReportWorkflow';
 import { healthDataCollectionWorkflow } from './workflows/healthDataCollectionWorkflow';
 
-// Mastra instance without storage for guest onboarding
+// Use shared PostgreSQL storage instance
 export const mastra = new Mastra({
+  storage: postgresStore,
   agents: {
     researchAgent,
     reportAgent,
