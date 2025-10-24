@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="relative min-h-screen">
+        <div className="relative h-screen">
           <AnimatedBackground />
           <div className="relative z-10">
             {children}
