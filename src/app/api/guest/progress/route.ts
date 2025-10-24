@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { calculateWeeklyRoutineProgress } from '@/lib/routineProgress';
 
 export async function GET(request: NextRequest) {
@@ -14,7 +15,16 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: 'Missing sessionId' }, { status: 400 });
     }
     
-    const supabase = await createClient();
+    console.log('🔍 Guest Progress API: Creating Supabase client...');
+    let supabase;
+    try {
+      supabase = await createServerClient();
+      console.log('✅ Guest Progress API: Server client created successfully');
+    } catch (serverError) {
+      console.warn('⚠️ Guest Progress API: Server client failed, falling back to browser client:', serverError);
+      supabase = createBrowserClient();
+      console.log('✅ Guest Progress API: Browser client created successfully');
+    }
     console.log('🔍 Guest Progress API: Querying database for session:', sessionId);
     
     const { data: session, error: queryError } = await supabase
