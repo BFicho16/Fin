@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+console.log('[GUEST ROUTE] Importing guestMastra...');
 import { guestMastra } from '@/mastra';
 import { RuntimeContext } from '@mastra/core/runtime-context';
 

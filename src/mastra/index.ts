@@ -12,6 +12,7 @@ import { guestOnboardingAgent } from './agents/guestOnboardingAgent';
 import { generateReportWorkflow } from './workflows/generateReportWorkflow';
 import { healthDataCollectionWorkflow } from './workflows/healthDataCollectionWorkflow';
 
+console.log('[MASTRA] About to create main mastra instance (with storage)');
 // Main Mastra instance with storage for authenticated users
 export const mastra = new Mastra({
   storage: postgresStore,
@@ -30,6 +31,7 @@ export const mastra = new Mastra({
   },
 });
 
+console.log('[MASTRA] About to create guestMastra instance (no storage)');
 // Guest onboarding instance without storage (uses Supabase directly)
 export const guestMastra = new Mastra({
   agents: {
