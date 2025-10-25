@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useHealthDataRealtime } from '@/lib/supabase/realtime';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatHeight } from '@/lib/unitConversions';
 import { 
   TrendingUp, 
   Activity, 
@@ -219,10 +220,22 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
             {getLatestMetric('height') ? (
               <div>
                 <div className="text-xl font-bold">
-                  {getLatestMetric('height')?.value} {getLatestMetric('height')?.unit}
+                  {(() => {
+                    const heightMetric = getLatestMetric('height');
+                    // Convert height to cm based on the stored unit, then format for display
+                    let heightInCm;
+                    if (heightMetric?.unit === 'in') {
+                      heightInCm = heightMetric.value * 2.54; // inches to cm
+                    } else if (heightMetric?.unit === 'ft') {
+                      heightInCm = heightMetric.value * 30.48; // feet to cm
+                    } else {
+                      heightInCm = heightMetric?.value; // already in cm
+                    }
+                    return formatHeight(heightInCm, 'imperial');
+                  })()}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  {new Date(getLatestMetric('height')?.logged_at || '').toLocaleDateString()}
+                  ft/in • {new Date(getLatestMetric('height')?.logged_at || '').toLocaleDateString()}
                 </p>
               </div>
             ) : (

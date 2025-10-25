@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { CheckCircle, Circle, ChevronDown, ChevronRight, Loader2, User, Heart, TrendingUp, SquareCheck, Utensils } from 'lucide-react';
+import { CheckCircle, Circle, ChevronDown, ChevronRight, Loader2, User, Heart, TrendingUp, BarChart3, Utensils } from 'lucide-react';
 import { getAllCategories } from './onboardingConfig';
 import WeeklyRoutineProgress from './WeeklyRoutineProgress';
+import { formatHeight } from '@/lib/unitConversions';
 
 interface GuestOnboardingTrackerProps {
   progressData: any;
@@ -35,7 +36,7 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
       <div className="h-full flex flex-col overflow-hidden">
         <div className="p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-2">
-            <SquareCheck className="h-5 w-5 text-primary" />
+            <BarChart3 className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">Longevity Profile</h2>
           </div>
         </div>
@@ -55,7 +56,7 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
       {/* Header */}
       <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center space-x-2">
-          <SquareCheck className="h-5 w-5 text-primary" />
+          <BarChart3 className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Longevity Profile</h2>
         </div>
       </div>
@@ -153,18 +154,33 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
             </CardHeader>
             <CardContent>
               {progress?.hasHealthMetrics && progressData.healthMetrics?.find((m: any) => m.metric_type === 'height') ? (
-                <div>
-                  <div className="text-2xl font-bold">
-                    {progressData.healthMetrics.find((m: any) => m.metric_type === 'height')?.value}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {progressData.healthMetrics.find((m: any) => m.metric_type === 'height')?.unit}
-                  </p>
-                </div>
+                (() => {
+                  const heightMetric = progressData.healthMetrics.find((m: any) => m.metric_type === 'height');
+                  // Convert height to cm based on the stored unit, then format for display
+                  let heightInCm;
+                  if (heightMetric.unit === 'in') {
+                    heightInCm = heightMetric.value * 2.54; // inches to cm
+                  } else if (heightMetric.unit === 'ft') {
+                    heightInCm = heightMetric.value * 30.48; // feet to cm
+                  } else {
+                    heightInCm = heightMetric.value; // already in cm
+                  }
+                  const formattedHeight = formatHeight(heightInCm, 'imperial');
+                  return (
+                    <div>
+                      <div className="text-2xl font-bold">
+                        {formattedHeight}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        ft/in
+                      </p>
+                    </div>
+                  );
+                })()
               ) : (
                 <div>
                   <div className="text-2xl font-bold text-muted-foreground">-</div>
-                  <p className="text-[10px] text-muted-foreground">in</p>
+                  <p className="text-[10px] text-muted-foreground">ft/in</p>
                 </div>
               )}
             </CardContent>
@@ -207,7 +223,7 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
           disabled={!isComplete}
           className="w-full"
         >
-          Get Started
+          Analyze My Routine
         </Button>
         {!isComplete && (
           <p className="text-xs text-muted-foreground mt-2 text-center">

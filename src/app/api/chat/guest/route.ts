@@ -184,8 +184,30 @@ If your working memory or semantic recall contains information that conflicts wi
     const runtimeContext = new RuntimeContext();
     (runtimeContext as any).set('guestSessionId', sessionId);
     
-    // Note: Memory clearing is handled by the agent instructions to ignore old memory
-    // and trust only the system context provided above
+    // Get conversation history from memory
+    let conversationHistory = [];
+    try {
+      const memory = await agent.getMemory();
+      if (memory) {
+        const threadId = `guest-onboarding-${sessionId}`;
+        const { uiMessages } = await memory.query({
+          threadId,
+          resourceId: `guest-${sessionId}`,
+          selectBy: {
+            last: 20, // Get last 20 messages for context
+          },
+        });
+        
+        // Transform messages for agent consumption
+        conversationHistory = uiMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+      }
+    } catch (error) {
+      console.log('No conversation history found for session:', sessionId);
+      // This is normal for new sessions
+    }
     
     // Stream response
     const stream = new ReadableStream({
@@ -198,10 +220,14 @@ If your working memory or semantic recall contains information that conflicts wi
         );
         
         try {
-          const response = await agent.stream([
-            contextMessage,  // <-- ADD THIS
-            { role: 'user', content: message }
-          ], {
+          // Build message array with context and conversation history
+          const messages = [
+            contextMessage,  // Current session state
+            ...conversationHistory,  // Previous conversation
+            { role: 'user', content: message }  // Current user message
+          ];
+          
+          const response = await agent.stream(messages, {
             memory: {
               thread: `guest-onboarding-${sessionId}`,
               resource: `guest-${sessionId}`,

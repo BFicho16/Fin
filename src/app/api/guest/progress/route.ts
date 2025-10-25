@@ -102,6 +102,11 @@ export async function GET(request: NextRequest) {
     
     const routineProgress = calculateWeeklyRoutineProgress(routines);
     
+    // Calculate total completed items
+    const totalCompletedItems = routines.reduce((total, routine) => {
+      return total + (routine.routine_items?.length || 0);
+    }, 0);
+    
     // Debug logging for routine transformation
     console.log('🔄 Guest Progress API: Transformed routines:', {
       originalCount: session?.routines?.length || 0,
@@ -132,7 +137,9 @@ export async function GET(request: NextRequest) {
         hasHealthMetrics: hasWeight && hasHeight,
         routinesComplete: routineProgress.isComplete,
         routineProgress,
-        isComplete: hasProfile && hasWeight && hasHeight && routineProgress.isComplete,
+        // CHANGE: Only require routines to be complete, not demographics/health
+        isComplete: routineProgress.isComplete,
+        totalCompletedItems,
       },
     };
     

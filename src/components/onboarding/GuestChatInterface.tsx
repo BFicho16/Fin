@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageContent } from '@/components/health/MessageContent';
-import SuggestedMessagesList from './SuggestedMessagesList';
+// import SuggestedMessagesList from './SuggestedMessagesList';
 import { useMobileKeyboard } from '@/lib/hooks/useMobileKeyboard';
 
 // Type assertion to fix React 19 type conflicts
@@ -276,17 +276,28 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
               height={24} 
               className="h-5 w-5 rounded-lg"
             />
-            <h3 className="text-xs font-medium">Onboarding Interview</h3>
+            <h3 className="text-xs font-medium">Routine Analyzer</h3>
           </div>
           <div className="flex items-center space-x-2">
             <ButtonComponent 
-              variant="outline" 
+              variant={progressData?.progress?.isComplete ? "default" : "outline"}
               size="sm"
               onClick={onOpenDrawer}
               className="lg:hidden"
             >
-              <BarChart3 className="h-3.5 w-3.5 mr-1" />
-              Profile
+              {progressData?.progress?.isComplete ? (
+                "Analyze Routine"
+              ) : progressData?.progress?.totalCompletedItems > 0 ? (
+                <>
+                  {progressData.progress.totalCompletedItems}
+                  <span className="ml-1">Profile</span>
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="h-3.5 w-3.5 mr-1" />
+                  Profile
+                </>
+              )}
             </ButtonComponent>
             <ButtonComponent 
               variant="outline" 
@@ -322,7 +333,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
               />
             </div>
             <p className="text-sm font-bold text-primary mb-2">Longevity Coach Onboarding</p>
-            <p className="text-2xl font-medium">Tell me about you and your routines and habits, the good and the bad!</p>
+            <p className="text-2xl font-medium">What time do you go to bed?</p>
           </div>
         ) : null}
 
@@ -359,7 +370,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
       </CardContentComponent>
 
       {/* Suggested Messages */}
-      {showSuggestedMessages && progressData && !isDelayingSuggestedMessages && (
+      {/* {showSuggestedMessages && progressData && !isDelayingSuggestedMessages && (
         <div className="px-4 pt-2 flex-shrink-0">
           <SuggestedMessagesList
             progressData={progressData}
@@ -367,7 +378,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
             onDismiss={handleSuggestedMessagesDismiss}
           />
         </div>
-      )}
+      )} */}
 
       {/* Input */}
       <CardFooterComponent className="pt-2 flex-shrink-0">
@@ -382,7 +393,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyPress={handleKeyPress}
-            placeholder="Tell me about yourself..."
+            placeholder="Tell me about your routines and habits..."
             className="flex-1 resize-none overflow-hidden"
             rows={1}
             disabled={isLoading}

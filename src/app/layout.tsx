@@ -6,8 +6,13 @@ import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Deep Research Assistant',
-  description: 'AI-powered research assistant with health and wellness capabilities',
+  title: 'Fin - Longevity Routine Optimization',
+  description: 'Fin is your personal AI longevity coach. Fin learns your routines and make recommendations to help you optimize your habits based on current research around healthspan and longevity.',
+  icons: {
+    icon: '/fin.png',
+    shortcut: '/fin.png',
+    apple: '/fin.png',
+  },
 }
 
 export default function RootLayout({

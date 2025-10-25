@@ -31,9 +31,10 @@ export const mastra = new Mastra({
   },
 });
 
-console.log('[MASTRA] About to create guestMastra instance (no storage)');
-// Guest onboarding instance without storage (uses Supabase directly)
+console.log('[MASTRA] About to create guestMastra instance (with storage)');
+// Guest onboarding instance with storage for conversation memory
 export const guestMastra = new Mastra({
+  storage: postgresStore,
   agents: {
     guestOnboardingAgent,
   },
