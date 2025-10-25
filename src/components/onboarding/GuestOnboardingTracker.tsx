@@ -63,6 +63,12 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+        {/* Routines */}
+        <WeeklyRoutineProgress 
+          routines={progressData.routines || []} 
+          isGuest={true}
+        />
+
         {/* Demographics and Health Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* Age Card */}
@@ -208,12 +214,6 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
             </div>
           </CardContent>
         </Card>
-
-        {/* Routines */}
-        <WeeklyRoutineProgress 
-          routines={progressData.routines || []} 
-          isGuest={true}
-        />
       </div>
 
       {/* Fixed Footer with Get Started Button */}
