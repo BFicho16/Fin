@@ -65,6 +65,11 @@ export default function GuestOnboardingClient() {
   }, [guestSessionId]);
   
   const handleGetStarted = () => {
+    // Track onboarding completion
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'OnboardingComplete');
+    }
+    
     // Store session ID for signup
     sessionStorage.setItem('guestSessionId', guestSessionId!);
     window.location.href = '/signup';

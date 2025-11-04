@@ -44,6 +44,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [showSuggestedMessages, setShowSuggestedMessages] = useState(true);
   const [isDelayingSuggestedMessages, setIsDelayingSuggestedMessages] = useState(false);
+  const [hasTrackedIntent, setHasTrackedIntent] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isKeyboardOpen } = useMobileKeyboard();
@@ -156,6 +157,12 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
 
       if (!response.ok) {
         throw new Error('Failed to send message');
+      }
+
+      // Track onboarding intent on first message
+      if (!hasTrackedIntent && typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'OnboardingIntent');
+        setHasTrackedIntent(true);
       }
 
       const reader = response.body?.getReader();

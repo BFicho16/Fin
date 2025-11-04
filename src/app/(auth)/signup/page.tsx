@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,15 @@ export default function SignupPage() {
   const [message, setMessage] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  // Track signup page visit
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'ViewContent', {
+        content_name: 'Signup Page'
+      });
+    }
+  }, [])
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +44,11 @@ export default function SignupPage() {
       setError(error.message)
       setLoading(false)
       return
+    }
+
+    // Track lead conversion when account is created
+    if (data.user && typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Lead');
     }
 
     if (data.user && guestSessionId) {
@@ -57,7 +71,7 @@ export default function SignupPage() {
       // Redirect to dashboard (don't reset loading state here)
       router.push('/dashboard')
       return // Exit early to prevent setLoading(false) from running
-    } else {
+    } else if (data.user) {
       setMessage('Check your email for confirmation link!')
       setLoading(false)
     }

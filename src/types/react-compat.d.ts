@@ -12,6 +12,16 @@ declare global {
       | undefined
       | bigint;
   }
+
+  // Facebook Pixel type declarations
+  interface Window {
+    fbq: (
+      action: 'init' | 'track',
+      eventName: string,
+      params?: Record<string, any>
+    ) => void;
+    _fbq?: typeof window.fbq;
+  }
 }
 
 export {};
