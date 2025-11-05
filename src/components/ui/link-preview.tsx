@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ExternalLink, Globe } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -85,10 +86,12 @@ export function LinkPreview({ url }: LinkPreviewProps) {
       >
         {ogData.image && (
           <div className="relative w-full h-32 overflow-hidden">
-            <img 
+            <Image 
               src={ogData.image} 
               alt={ogData.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
               onError={(e) => {
                 // Hide image if it fails to load
                 (e.target as HTMLImageElement).style.display = 'none';

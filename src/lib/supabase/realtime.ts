@@ -73,7 +73,7 @@ export function useHealthDataRealtime(userId: string, callbacks: RealtimeCallbac
       });
       channelsRef.current = [];
     };
-  }, [userId, callbacks, subscribeToTable]);
+  }, [userId, callbacks, subscribeToTable, supabase]);
 
   return {
     isConnected: channelsRef.current.length > 0,

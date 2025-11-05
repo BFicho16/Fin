@@ -63,7 +63,7 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [userId]);
+  }, [userId, fetchDashboardData]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -246,7 +246,7 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs font-medium">Today's Steps</CardTitle>
+            <CardTitle className="text-xs font-medium">Today&apos;s Steps</CardTitle>
             <Footprints className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -277,7 +277,7 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <Utensils className="h-4 w-4" />
-              Today's Meals
+              Today&apos;s Meals
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -302,7 +302,7 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <Dumbbell className="h-4 w-4" />
-              Today's Exercise
+              Today&apos;s Exercise
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useHealthDataRealtime } from '@/lib/supabase/realtime';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,18 +26,7 @@ export default function HealthMetricsChart({ userId }: HealthMetricsChartProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<string>('30');
 
-  useEffect(() => {
-    fetchMetrics();
-  }, [userId, selectedMetric, timeRange]);
-
-  // Set up realtime subscriptions
-  useHealthDataRealtime(userId, {
-    onHealthMetricsUpdate: () => {
-      fetchMetrics();
-    }
-  });
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       setIsLoading(true);
       const endDate = new Date().toISOString();
@@ -56,7 +45,18 @@ export default function HealthMetricsChart({ userId }: HealthMetricsChartProps) 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, selectedMetric, timeRange]);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
+
+  // Set up realtime subscriptions
+  useHealthDataRealtime(userId, {
+    onHealthMetricsUpdate: () => {
+      fetchMetrics();
+    }
+  });
 
   // Transform data for chart
   const chartData = metrics
