@@ -61,10 +61,6 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
   const [todayExercises, setTodayExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [userId, fetchDashboardData]);
-
   const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -111,6 +107,10 @@ export default function HealthDashboard({ userId }: HealthDashboardProps) {
       setIsLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // Set up realtime subscriptions
   useHealthDataRealtime(userId, {
