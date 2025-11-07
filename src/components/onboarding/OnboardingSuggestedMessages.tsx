@@ -164,7 +164,7 @@ export const suggestedMessages: SuggestedMessage[] = [
 export function getFilteredSuggestedMessages(progressData: any, dismissedMessages: Set<string>): SuggestedMessage[] {
   if (!progressData) return [];
 
-  const { progress, profile, healthMetrics, dietaryPreferences, routines } = progressData;
+  const { progress, profile, healthMetrics, dietaryPreferences, sleepRoutine } = progressData;
 
   // Determine what fields are completed
   const completedFields = new Set<string>();
@@ -177,10 +177,13 @@ export function getFilteredSuggestedMessages(progressData: any, dismissedMessage
   if (healthMetrics?.some((m: any) => m.metric_type === 'weight')) completedFields.add('weight');
   if (healthMetrics?.some((m: any) => m.metric_type === 'height')) completedFields.add('height');
 
-  // Check routines
-  if (progress?.routinesComplete) {
-    completedFields.add('morning_routine');
-    completedFields.add('night_routine');
+  // Sleep routine coverage
+  const hasNightRoutine = !!sleepRoutine?.night?.bedtime || (sleepRoutine?.night?.pre_bed?.length ?? 0) > 0;
+  const hasMorningRoutine = !!sleepRoutine?.morning?.wake_time;
+
+  if (hasMorningRoutine) completedFields.add('morning_routine');
+  if (hasNightRoutine) completedFields.add('night_routine');
+  if (progress?.sleepRoutineComplete) {
     completedFields.add('weekend_routine');
     completedFields.add('exercise_routine');
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import GuestChatInterface from '@/components/onboarding/GuestChatInterface';
 import GuestOnboardingTracker from '@/components/onboarding/GuestOnboardingTracker';
@@ -12,26 +12,42 @@ export default function GuestOnboardingClient() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   
-  // Fetch initial progress data
-  useEffect(() => {
+  const fetchProgress = useCallback(async () => {
     if (!guestSessionId) return;
-    
-    const fetchProgress = async () => {
+
+    try {
       console.log('🔍 GuestOnboardingClient: Fetching progress for session:', guestSessionId);
-      const res = await fetch(`/api/guest/progress?sessionId=${guestSessionId}`);
+      const res = await fetch(`/api/guest/progress?sessionId=${guestSessionId}`, {
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        console.error('❌ GuestOnboardingClient: Failed to fetch progress', {
+          status: res.status,
+          statusText: res.statusText,
+        });
+        return;
+      }
+
       const data = await res.json();
       console.log('📊 GuestOnboardingClient: Progress data received:', {
         hasProfile: !!data.profile?.birth_date && !!data.profile?.gender,
         hasHealthMetrics: !!data.healthMetrics?.length,
-        routinesCount: data.routines?.length || 0,
-        routineItemsCount: data.routines?.reduce((total: number, r: any) => total + (r.items?.length || 0), 0) || 0,
-        progressComplete: data.progress?.isComplete
+        bedtimeSaved: !!data.sleepRoutine?.night?.bedtime,
+        wakeTimeSaved: !!data.sleepRoutine?.morning?.wake_time,
+        preBedHabits: data.sleepRoutine?.night?.pre_bed?.length || 0,
+        progressComplete: data.progress?.isComplete,
       });
       setProgressData(data);
-    };
-    
-    fetchProgress();
+    } catch (error) {
+      console.error('❌ GuestOnboardingClient: Error fetching progress', error);
+    }
   }, [guestSessionId]);
+
+  // Fetch initial progress data
+  useEffect(() => {
+    fetchProgress();
+  }, [fetchProgress]);
   
   // Set up real-time subscription for guest session updates
   useEffect(() => {
@@ -40,29 +56,30 @@ export default function GuestOnboardingClient() {
     const supabase = createClient();
     
     // Subscribe to changes on the guest session row
-    const subscription = supabase
+    const channel = supabase
       .channel(`guest-session-${guestSessionId}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'guest_onboarding_sessions',
           filter: `session_id=eq.${guestSessionId}`,
         },
         async (payload) => {
-          // Fetch updated progress data
-          const res = await fetch(`/api/guest/progress?sessionId=${guestSessionId}`);
-          const data = await res.json();
-          setProgressData(data);
+          console.log('🔔 GuestOnboardingClient: Realtime payload received', payload.eventType);
+          await fetchProgress();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 GuestOnboardingClient: Realtime channel status', status);
+      });
     
     return () => {
-      subscription.unsubscribe();
+      console.log('🔌 GuestOnboardingClient: Unsubscribing realtime channel');
+      channel.unsubscribe();
     };
-  }, [guestSessionId]);
+  }, [guestSessionId, fetchProgress]);
   
   const handleGetStarted = () => {
     // Track onboarding completion
@@ -82,6 +99,7 @@ export default function GuestOnboardingClient() {
           guestSessionId={guestSessionId}
           onSessionIdReceived={setGuestSessionId}
           progressData={progressData}
+          onProgressRefresh={fetchProgress}
           onOpenDrawer={() => setIsDrawerOpen(true)}
         />
       </div>

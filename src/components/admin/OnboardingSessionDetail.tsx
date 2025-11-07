@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { SleepRoutine } from '@/lib/sleepRoutine';
 
 type Message = { id: string; role: string; content: string; createdAt: string; text?: string };
 
@@ -10,7 +11,7 @@ type DetailResponse = {
   sessionId: string;
   threadId: string;
   messages: Message[];
-  routines: any[] | null;
+  sleepRoutine: SleepRoutine;
 };
 
 type Props = {
@@ -40,8 +41,7 @@ export function OnboardingSessionDetail({ sessionId, open, onOpenChange }: Props
     load();
   }, [open, sessionId]);
 
-  const totalRoutineItems = (data?.routines ?? [])
-    .reduce((acc: number, r: any) => acc + ((r?.items?.length as number) || 0), 0);
+  const preBedItems = data?.sleepRoutine?.night?.pre_bed ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,22 +74,23 @@ export function OnboardingSessionDetail({ sessionId, open, onOpenChange }: Props
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="font-medium">Routine items {data.routines ? `(${totalRoutineItems})` : '(N/A)'}</div>
-                <div className="max-h-80 overflow-auto border rounded-md p-2 space-y-2">
-                  {data.routines ? (
-                    (data.routines as any[]).map((r: any, idx: number) => (
-                      <div key={idx} className="text-sm">
-                        <div className="text-xs text-muted-foreground">{r.routine_name ?? 'Routine'}</div>
-                        <ul className="list-disc pl-5">
-                          {(r.items ?? []).map((it: any, i: number) => (
-                            <li key={i}>{it.item_name ?? it.name ?? 'Item'}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground">Routine data not available in this environment.</div>
-                  )}
+                <div className="font-medium">Sleep routine snapshot</div>
+                <div className="border rounded-md p-3 space-y-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Bedtime</div>
+                    <div className="text-sm font-semibold">{data.sleepRoutine?.night?.bedtime || '—'}</div>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground mt-2 space-y-1">
+                      {preBedItems.length > 0 ? (
+                        preBedItems.map((item, idx) => <li key={`${item.item_name}-${idx}`}>{item.item_name}</li>)
+                      ) : (
+                        <li>No pre-bed habits captured</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Wake-up</div>
+                    <div className="text-sm font-semibold">{data.sleepRoutine?.morning?.wake_time || '—'}</div>
+                  </div>
                 </div>
               </div>
             </div>

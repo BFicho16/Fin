@@ -12,31 +12,22 @@ export async function POST(request: NextRequest) {
     let sessionId = guestSessionId;
     
     if (!sessionId) {
-      // Create new session with pre-populated routine structure
+      // Create new session with empty sleep routine structure
       console.log('Creating new guest session...');
-      
-      // Generate empty routine structure for all days and times
-      const emptyRoutines = [];
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const timeSlots = ['morning', 'midday', 'night', 'workout'];
-      
-      for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-        for (const timeOfDay of timeSlots) {
-          emptyRoutines.push({
-            routine_name: `${days[dayOfWeek]} ${timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1)}`,
-            day_of_week: dayOfWeek,
-            time_of_day: timeOfDay,
-            status: 'active',
-            items: [],
-            temp_routine_id: `temp-${Date.now()}-${dayOfWeek}-${timeOfDay}`
-          });
+      const emptySleepRoutine = {
+        night: {
+          bedtime: null,
+          pre_bed: [],
+        },
+        morning: {
+          wake_time: null,
         }
-      }
-      
+      };
+
       const { data, error } = await supabase
         .from('guest_onboarding_sessions')
         .insert({ 
-          routines: emptyRoutines 
+          sleep_routine: emptySleepRoutine 
         })
         .select('session_id')
         .single();
@@ -47,7 +38,7 @@ export async function POST(request: NextRequest) {
       }
       
       sessionId = data.session_id;
-      console.log('Created guest session with pre-populated routines:', sessionId);
+      console.log('Created guest session with empty sleep routine:', sessionId);
     } else {
       // Check if session actually exists in database
       console.log('Checking if session exists:', sessionId);
@@ -58,30 +49,21 @@ export async function POST(request: NextRequest) {
         .single();
         
       if (fetchError || !existingSession) {
-        console.log('Session not found in database, creating new session with pre-populated routines');
-        
-        // Generate empty routine structure for all days and times
-        const emptyRoutines = [];
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const timeSlots = ['morning', 'midday', 'night', 'workout'];
-        
-        for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-          for (const timeOfDay of timeSlots) {
-            emptyRoutines.push({
-              routine_name: `${days[dayOfWeek]} ${timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1)}`,
-              day_of_week: dayOfWeek,
-              time_of_day: timeOfDay,
-              status: 'active',
-              items: [],
-              temp_routine_id: `temp-${Date.now()}-${dayOfWeek}-${timeOfDay}`
-            });
+        console.log('Session not found in database, creating new session with empty sleep routine');
+        const emptySleepRoutine = {
+          night: {
+            bedtime: null,
+            pre_bed: [],
+          },
+          morning: {
+            wake_time: null,
           }
-        }
-        
+        };
+
         const { data, error } = await supabase
           .from('guest_onboarding_sessions')
           .insert({ 
-            routines: emptyRoutines 
+            sleep_routine: emptySleepRoutine 
           })
           .select('session_id')
           .single();
@@ -92,7 +74,7 @@ export async function POST(request: NextRequest) {
         }
         
         sessionId = data.session_id;
-        console.log('Created new session with pre-populated routines:', sessionId);
+        console.log('Created new session with empty sleep routine:', sessionId);
         
         // Clear any existing memory for the old session ID to ensure fresh start
         try {
@@ -141,8 +123,8 @@ export async function POST(request: NextRequest) {
 ## Dietary Preferences
 {}
 
-## All Routines (0 total)
-[]
+## Sleep Routine
+{}
 
 **IMPORTANT**: This is the COMPLETE current state. Any data shown above has already been collected. Do not ask for it again. When deleting, use exact names from above.
 
@@ -153,7 +135,7 @@ If your working memory or semantic recall contains information that conflicts wi
 
       return {
         role: 'system' as const,
-        content: `# Current Session State (Session ID: ${sessionId})
+          content: `# Current Session State (Session ID: ${sessionId})
 
 ## Profile Data
 ${JSON.stringify(sessionData?.profile || {}, null, 2)}
@@ -164,8 +146,8 @@ ${JSON.stringify(sessionData?.health_metrics || [], null, 2)}
 ## Dietary Preferences
 ${JSON.stringify(sessionData?.dietary_preferences || {}, null, 2)}
 
-## All Routines (${(sessionData?.routines || []).length} total)
-${JSON.stringify(sessionData?.routines || [], null, 2)}
+## Sleep Routine
+${JSON.stringify(sessionData?.sleep_routine || {}, null, 2)}
 
 **IMPORTANT**: This is the COMPLETE current state. Any data shown above has already been collected. Do not ask for it again. When deleting, use exact names from above.
 

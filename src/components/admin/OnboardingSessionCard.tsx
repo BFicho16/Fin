@@ -34,7 +34,7 @@ export function OnboardingSessionCard({ session, onOpen, className }: Props) {
           <div className="min-w-[170px] font-medium text-foreground">Session {displayId}</div>
           <div className="flex-1 text-muted-foreground">Last activity: <span className="text-foreground">{lastLabel}</span></div>
           <div className="w-[120px] text-muted-foreground">Messages: <span className="text-foreground">{messageCount}</span></div>
-          <div className="w-[170px] text-muted-foreground">Routine items: <span className="text-foreground">{routineItemsCount ?? 'N/A'}</span></div>
+          <div className="w-[170px] text-muted-foreground">Sleep data points: <span className="text-foreground">{routineItemsCount ?? 'N/A'}</span></div>
           <div className="ml-auto">
             <Button size="sm" onClick={() => onOpen(sessionId)}>View</Button>
           </div>

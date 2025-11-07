@@ -76,10 +76,112 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 4. Routines and items
-    if (guestSession.routines?.length > 0) {
+    // 4. Sleep routine → create default weekly routines
+    const sleepRoutine = guestSession.sleep_routine;
+    if (sleepRoutine) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const bedtime = sleepRoutine?.night?.bedtime;
+      const wakeTime = sleepRoutine?.morning?.wake_time;
+      const preBed = Array.isArray(sleepRoutine?.night?.pre_bed) ? sleepRoutine.night.pre_bed : [];
+
+      for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
+        const dayName = days[dayIndex];
+
+        const routinesToCreate = [
+          {
+            routine_name: `${dayName} Night`,
+            time_of_day: 'night',
+            items: [
+              ...(bedtime
+                ? [{
+                    item_name: `go to bed at ${bedtime}`,
+                    item_type: 'rest',
+                    habit_classification: 'good',
+                    item_order: 1,
+                  }]
+                : []),
+              ...preBed.map((item: any, index: number) => ({
+                ...item,
+                item_order: item.item_order ?? index + 2,
+              })),
+            ],
+          },
+          {
+            routine_name: `${dayName} Morning`,
+            time_of_day: 'morning',
+            items: [
+              ...(wakeTime
+                ? [{
+                    item_name: `wake up at ${wakeTime}`,
+                    item_type: 'rest',
+                    habit_classification: 'good',
+                    item_order: 1,
+                  }]
+                : []),
+            ],
+          },
+        ];
+
+        for (const routineTemplate of routinesToCreate) {
+          if (!routineTemplate.items.length) continue;
+
+          const { data: newRoutine, error: routineError } = await supabase
+            .from('user_routines')
+            .insert({
+              user_id: user.id,
+              routine_name: routineTemplate.routine_name,
+              description: `Imported from guest sleep routine for ${dayName}.`,
+              status: 'active',
+              schedule_type: 'weekly',
+              schedule_config: { days_of_week: [dayIndex] },
+              time_of_day: routineTemplate.time_of_day,
+            })
+            .select('id')
+            .single();
+
+          if (routineError) {
+            console.error('Error creating routine:', routineError);
+            throw routineError;
+          }
+
+          if (!newRoutine || !newRoutine.id) {
+            console.error('No routine ID returned from insert');
+            throw new Error('Failed to create routine');
+          }
+
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(newRoutine.id)) {
+            console.error('Invalid UUID format for routine ID:', newRoutine.id);
+            throw new Error('Invalid routine ID format');
+          }
+
+          const itemsWithRoutineId = routineTemplate.items.map((item: any, index: number) => {
+            const { temp_item_id, id, item_order, ...rest } = item;
+            return {
+              ...rest,
+              item_order: item_order ?? index + 1,
+              routine_id: newRoutine.id,
+            };
+          });
+
+          if (!itemsWithRoutineId.length) {
+            continue;
+          }
+
+          const { error: itemsError } = await supabase
+            .from('routine_items')
+            .insert(itemsWithRoutineId)
+            .select();
+
+          if (itemsError) {
+            console.error('Error inserting routine items:', itemsError);
+            throw itemsError;
+          }
+        }
+      }
+    } else if (guestSession.routines?.length > 0) {
+      // Legacy fallback for older guest sessions
       for (const guestRoutine of guestSession.routines) {
-        // Insert routine
         const { data: newRoutine, error: routineError } = await supabase
           .from('user_routines')
           .insert({
@@ -93,52 +195,41 @@ export async function POST(request: NextRequest) {
           })
           .select('id')
           .single();
-          
+
         if (routineError) {
           console.error('Error creating routine:', routineError);
           throw routineError;
         }
-        
+
         if (!newRoutine || !newRoutine.id) {
           console.error('No routine ID returned from insert');
           throw new Error('Failed to create routine');
         }
-        
-        console.log('Created routine with ID:', newRoutine.id);
-        
-        // Insert items
-        if (guestRoutine.items?.length > 0 && newRoutine && newRoutine.id) {
-          console.log(`Migrating ${guestRoutine.items.length} items for routine ${newRoutine.id}`);
-          
-          // Validate UUID format
+
+        if (guestRoutine.items?.length > 0) {
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (!uuidRegex.test(newRoutine.id)) {
             console.error('Invalid UUID format for routine ID:', newRoutine.id);
             throw new Error('Invalid routine ID format');
           }
-          
+
           const itemsWithRoutineId = guestRoutine.items.map((item: any) => {
-            // Remove any temporary IDs and let Supabase generate new UUIDs
             const { temp_item_id, id, ...itemData } = item;
             return {
               ...itemData,
               routine_id: newRoutine.id,
             };
           });
-          
-          console.log('Items to insert:', JSON.stringify(itemsWithRoutineId, null, 2));
-          
-          const { data: insertedItems, error: itemsError } = await supabase
+
+          const { error: itemsError } = await supabase
             .from('routine_items')
             .insert(itemsWithRoutineId)
             .select();
-            
+
           if (itemsError) {
             console.error('Error inserting routine items:', itemsError);
             throw itemsError;
           }
-          
-          console.log(`Successfully inserted ${insertedItems?.length || 0} routine items`);
         }
       }
     }

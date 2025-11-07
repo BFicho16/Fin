@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { calculateWeeklyRoutineProgress } from '@/lib/routineProgress';
+import { ensureSleepRoutineShape, calculateSleepRoutineProgress } from '@/lib/sleepRoutine';
 
 export async function GET(request: NextRequest) {
   console.log('🚀 Guest Progress API: Starting request');
@@ -56,16 +56,12 @@ export async function GET(request: NextRequest) {
         profile: null,
         healthMetrics: [],
         dietaryPreferences: {},
-        routines: [],
+        sleepRoutine: ensureSleepRoutineShape(),
         progress: {
           hasProfile: false,
           hasHealthMetrics: false,
-          routinesComplete: false,
-          routineProgress: {
-            isComplete: false,
-            totalSlotsFilled: 0,
-            days: Array(7).fill({ morning: [], night: [], workout: [], midday: [] })
-          },
+          sleepRoutineComplete: false,
+          sleepProgress: calculateSleepRoutineProgress(ensureSleepRoutineShape()),
           isComplete: false,
         },
       };
@@ -77,76 +73,43 @@ export async function GET(request: NextRequest) {
       sessionId: session.session_id,
       hasProfile: !!session.profile,
       hasHealthMetrics: !!session.health_metrics,
-      hasRoutines: !!session.routines,
-      routinesCount: session.routines?.length || 0
+      hasSleepRoutine: !!session.sleep_routine,
     });
     
-    // Calculate progress from JSON
     const hasProfile = session?.profile?.birth_date && session?.profile?.gender;
     const hasWeight = session?.health_metrics?.some((m: any) => m.metric_type === 'weight');
     const hasHeight = session?.health_metrics?.some((m: any) => m.metric_type === 'height');
-    
-    const routines = (session?.routines || []).map((r: any) => ({
-      ...r,
-      routine_items: r.items || [],
-      // Transform guest routine structure to match expected format
-      schedule_config: {
-        days_of_week: [r.day_of_week]
-      },
-      schedule_type: 'weekly',
-      status: 'active', // Guest routines are always active
-      id: r.temp_routine_id || `temp-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-    
-    const routineProgress = calculateWeeklyRoutineProgress(routines);
-    
-    // Calculate total completed items
-    const totalCompletedItems = routines.reduce((total, routine) => {
-      return total + (routine.routine_items?.length || 0);
-    }, 0);
-    
-    // Debug logging for routine transformation
-    console.log('🔄 Guest Progress API: Transformed routines:', {
-      originalCount: session?.routines?.length || 0,
-      transformedCount: routines.length,
-      totalItems: routines.reduce((total, r) => total + (r.routine_items?.length || 0), 0),
-      progressComplete: routineProgress.isComplete,
-      totalSlotsFilled: routineProgress.totalSlotsFilled
+
+    const sleepRoutine = ensureSleepRoutineShape(session?.sleep_routine);
+    const sleepProgress = calculateSleepRoutineProgress(sleepRoutine);
+
+    console.log('🔄 Guest Progress API: Sleep progress snapshot:', {
+      hasBedtime: sleepProgress.hasBedtime,
+      hasWakeTime: sleepProgress.hasWakeTime,
+      preBedCount: sleepProgress.preBedCount,
+      isComplete: sleepProgress.isComplete,
     });
-    
-    // Debug logging for individual routine items
-    routines.forEach((routine, index) => {
-      console.log(`🔍 Routine ${index}:`, {
-        name: routine.routine_name,
-        day: routine.day_of_week,
-        timeOfDay: routine.time_of_day,
-        itemsCount: routine.routine_items?.length || 0,
-        items: routine.routine_items?.map((item: any) => item.item_name) || []
-      });
-    });
-    
+
     const response = {
       profile: session?.profile,
       healthMetrics: session?.health_metrics,
       dietaryPreferences: session?.dietary_preferences,
-      routines: routines, // Return transformed routines, not original
+      sleepRoutine,
       progress: {
         hasProfile,
         hasHealthMetrics: hasWeight && hasHeight,
-        routinesComplete: routineProgress.isComplete,
-        routineProgress,
-        // CHANGE: Only require routines to be complete, not demographics/health
-        isComplete: routineProgress.isComplete,
-        totalCompletedItems,
+        sleepRoutineComplete: sleepProgress.isComplete,
+        sleepProgress,
+        isComplete: sleepProgress.isComplete,
       },
     };
     
     console.log('📤 Guest Progress API: Returning response:', {
       hasProfile: !!response.profile,
       healthMetricsCount: response.healthMetrics?.length || 0,
-      routinesCount: response.routines?.length || 0,
+      bedtime: response.sleepRoutine.night?.bedtime,
+      wakeTime: response.sleepRoutine.morning?.wake_time,
+      preBedCount: response.sleepRoutine.night?.pre_bed?.length || 0,
       progressComplete: response.progress.isComplete,
       timestamp: new Date().toISOString()
     });

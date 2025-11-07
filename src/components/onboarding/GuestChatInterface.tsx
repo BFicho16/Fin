@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, BarChart3 } from 'lucide-react';
+import { Send, User, Bot, BedSingle } from 'lucide-react';
 import Image from 'next/image';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,9 +34,10 @@ interface GuestChatInterfaceProps {
   onSessionIdReceived: (sessionId: string) => void;
   progressData: any;
   onOpenDrawer: () => void;
+  onProgressRefresh?: () => void | Promise<void>;
 }
 
-export default function GuestChatInterface({ guestSessionId, onSessionIdReceived, progressData, onOpenDrawer }: GuestChatInterfaceProps) {
+export default function GuestChatInterface({ guestSessionId, onSessionIdReceived, progressData, onOpenDrawer, onProgressRefresh }: GuestChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -192,6 +193,13 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
             if (data === '[DONE]') {
+              if (onProgressRefresh) {
+                try {
+                  await Promise.resolve(onProgressRefresh());
+                } catch (refreshError) {
+                  console.error('Error refreshing progress after assistant response:', refreshError);
+                }
+              }
               setIsLoading(false);
               return;
             }
@@ -294,17 +302,24 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
             >
               {progressData?.progress?.isComplete ? (
                 "Analyze Routine"
-              ) : progressData?.progress?.totalCompletedItems > 0 ? (
-                <>
-                  {progressData.progress.totalCompletedItems}
-                  <span className="ml-1">Profile</span>
-                </>
-              ) : (
-                <>
-                  <BarChart3 className="h-3.5 w-3.5 mr-1" />
-                  Profile
-                </>
-              )}
+              ) : (() => {
+                const sleepDataPoints =
+                  (progressData?.sleepRoutine?.night?.bedtime ? 1 : 0) +
+                  (progressData?.sleepRoutine?.morning?.wake_time ? 1 : 0) +
+                  (progressData?.sleepRoutine?.night?.pre_bed?.length || 0);
+
+                return sleepDataPoints > 0 ? (
+                  <>
+                    {sleepDataPoints}
+                    <span className="ml-1">Sleep insights</span>
+                  </>
+                ) : (
+                  <>
+                    <BedSingle className="h-3.5 w-3.5 mr-1" />
+                    Profile
+                  </>
+                );
+              })()}
             </ButtonComponent>
             <ButtonComponent 
               variant="outline" 
@@ -400,7 +415,7 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyPress={handleKeyPress}
-            placeholder="Tell me about your routines and habits..."
+            placeholder="Share your routine..."
             className="flex-1 resize-none overflow-hidden"
             rows={1}
             disabled={isLoading}

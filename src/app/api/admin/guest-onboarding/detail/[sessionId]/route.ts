@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { ensureSleepRoutineShape } from '@/lib/sleepRoutine';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_EMAILS = new Set([
@@ -92,26 +93,26 @@ export async function GET(
   }
   const normalizedMessages = deduped;
 
-  // Try to fetch routines from guest_onboarding_sessions
-  let routines: any[] | null = null;
+  // Try to fetch sleep routine from guest_onboarding_sessions
+  let sleepRoutine = ensureSleepRoutineShape();
   try {
     const { data: sessionRow, error: sessionError } = await supabase
       .from('guest_onboarding_sessions')
-      .select('routines')
+      .select('sleep_routine')
       .eq('session_id', sessionId)
       .single();
 
     if (sessionError) throw sessionError;
-    routines = (sessionRow?.routines as any[]) ?? [];
+    sleepRoutine = ensureSleepRoutineShape(sessionRow?.sleep_routine || {});
   } catch (_err) {
-    routines = null;
+    sleepRoutine = ensureSleepRoutineShape();
   }
 
   return Response.json({
     sessionId,
     threadId,
     messages: normalizedMessages,
-    routines,
+    sleepRoutine,
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
 

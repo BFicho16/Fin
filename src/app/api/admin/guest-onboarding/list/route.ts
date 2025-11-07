@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { ensureSleepRoutineShape } from '@/lib/sleepRoutine';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_EMAILS = new Set([
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
     // Fetch sessions for these ids
     const { data: sessions, error } = await supabase
       .from('guest_onboarding_sessions')
-      .select('session_id, created_at, last_accessed, routines')
+      .select('session_id, created_at, last_accessed, sleep_routine')
       .in('session_id', pagedSessionIds);
 
     if (error) throw error;
@@ -120,8 +121,11 @@ export async function GET(request: NextRequest) {
         const row = byId.get(sessionId);
         const createdAt: string | null = row?.created_at ?? null;
         const lastAccessed: string | null = row?.last_accessed ?? null;
-        const routines = (row?.routines ?? []) as Array<any>;
-        const routineItemsCount = routines.reduce((acc, r) => acc + ((r?.items?.length as number) || 0), 0);
+        const sleepRoutine = ensureSleepRoutineShape(row?.sleep_routine || {});
+        const routineItemsCount =
+          (sleepRoutine.night?.bedtime ? 1 : 0) +
+          (sleepRoutine.morning?.wake_time ? 1 : 0) +
+          (sleepRoutine.night?.pre_bed?.length || 0);
 
         // Count normalized, de-duplicated TOTAL messages (user/human + assistant)
         const { data: msgsForCount } = await supabase
