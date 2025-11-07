@@ -4,13 +4,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, BedSingle, Info, HeartPulse } from 'lucide-react';
 import SleepRoutineProgressCard from './SleepRoutineProgress';
 import { ensureSleepRoutineShape, calculateSleepRoutineProgress } from '@/lib/sleepRoutine';
+import { Input } from '@/components/ui/input';
 
 interface GuestOnboardingTrackerProps {
   progressData: any;
-  onGetStarted: () => void;
+  onAnalyzeRoutine: () => void;
 }
 
-export default function GuestOnboardingTracker({ progressData, onGetStarted }: GuestOnboardingTrackerProps) {
+export default function GuestOnboardingTracker({ progressData, onAnalyzeRoutine }: GuestOnboardingTrackerProps) {
 
   if (!progressData) {
     return (
@@ -32,6 +33,8 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
   const sleepRoutine = ensureSleepRoutineShape(rawSleepRoutine);
   const sleepProgress = progress?.sleepProgress || calculateSleepRoutineProgress(sleepRoutine);
   const isComplete = progress?.isComplete || false;
+  const email = progressData?.email ?? '';
+  const hasEmail = typeof email === 'string' && email.length > 0;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -53,6 +56,24 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
           progress={sleepProgress}
         />
 
+        <div className="border rounded-lg p-4 bg-white">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <Input
+              value={email}
+              readOnly
+              placeholder="Email address"
+              className="flex-1"
+            />
+            <Button 
+              onClick={onAnalyzeRoutine}
+              disabled={!hasEmail || !isComplete}
+              className="w-full sm:w-auto"
+            >
+              Analyze Routine
+            </Button>
+          </div>
+        </div>
+
         <Alert className="bg-primary/10 border-primary/20">
           <div className="flex flex-col items-start space-y-3">
             <div className="p-2 rounded-full bg-primary/15 text-primary">
@@ -69,21 +90,14 @@ export default function GuestOnboardingTracker({ progressData, onGetStarted }: G
 
       </div>
 
-      {/* Fixed Footer with Get Started Button */}
-      <div className="border-t p-4 flex-shrink-0">
-        <Button 
-          onClick={onGetStarted}
-          disabled={!isComplete}
-          className="w-full"
-        >
-          Analyze Sleep Routine
-        </Button>
-        {!isComplete && (
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Add your bedtime, wake time, and wind-down habits to continue
+      {/* Footer helper text */}
+      {!isComplete && (
+        <div className="border-t p-4 flex-shrink-0">
+          <p className="text-xs text-muted-foreground text-center">
+            Add your bedtime, wake time, and wind-down habits to continue.
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

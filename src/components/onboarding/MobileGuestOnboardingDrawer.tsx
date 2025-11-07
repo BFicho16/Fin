@@ -5,14 +5,14 @@ import GuestOnboardingTracker from './GuestOnboardingTracker';
 
 interface MobileGuestOnboardingDrawerProps {
   progressData: any;
-  onGetStarted: () => void;
+  onAnalyzeRoutine: () => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export default function MobileGuestOnboardingDrawer({ 
   progressData, 
-  onGetStarted, 
+  onAnalyzeRoutine, 
   isOpen, 
   onOpenChange 
 }: MobileGuestOnboardingDrawerProps) {
@@ -27,7 +27,7 @@ export default function MobileGuestOnboardingDrawer({
           <div className="h-full overflow-y-auto">
             <GuestOnboardingTracker 
               progressData={progressData}
-              onGetStarted={onGetStarted}
+              onAnalyzeRoutine={onAnalyzeRoutine}
             />
           </div>
         </SheetContent>

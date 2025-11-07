@@ -78,6 +78,7 @@ export const getGuestDataTool = createTool({
     healthMetrics: z.array(z.any()),
     dietaryPreferences: z.any(),
     sleepRoutine: z.any(),
+    email: z.string().nullable(),
   }),
   execute: async ({ runtimeContext }) => {
     const guestSessionId = runtimeContext?.get('guestSessionId');
@@ -95,6 +96,7 @@ export const getGuestDataTool = createTool({
       healthMetrics: data?.health_metrics || [],
       dietaryPreferences: data?.dietary_preferences || {},
       sleepRoutine: ensureSleepRoutineShape(data?.sleep_routine),
+      email: data?.email ?? null,
     };
   },
 });
@@ -122,6 +124,7 @@ export const updateGuestDataTool = createTool({
       disliked_foods: z.array(z.string()).optional(),
     }).optional(),
     sleep_routine: sleepRoutineSchema.optional(),
+    email: z.string().email().optional(),
   }),
   execute: async ({ context, runtimeContext }) => {
     const guestSessionId = runtimeContext?.get('guestSessionId');
@@ -183,6 +186,10 @@ export const updateGuestDataTool = createTool({
       }
 
       updates.sleep_routine = ensureSleepRoutineShape(nextSleep);
+    }
+
+    if (context.email) {
+      updates.email = context.email.trim();
     }
     
     if (Object.keys(updates).length === 1) {

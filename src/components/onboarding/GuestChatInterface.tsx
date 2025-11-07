@@ -295,31 +295,19 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
           </div>
           <div className="flex items-center space-x-2">
             <ButtonComponent 
-              variant={progressData?.progress?.isComplete ? "default" : "outline"}
+              variant={progressData?.email ? "default" : "outline"}
               size="sm"
               onClick={onOpenDrawer}
               className="lg:hidden"
             >
-              {progressData?.progress?.isComplete ? (
-                "Analyze Routine"
-              ) : (() => {
-                const sleepDataPoints =
-                  (progressData?.sleepRoutine?.night?.bedtime ? 1 : 0) +
-                  (progressData?.sleepRoutine?.morning?.wake_time ? 1 : 0) +
-                  (progressData?.sleepRoutine?.night?.pre_bed?.length || 0);
-
-                return sleepDataPoints > 0 ? (
-                  <>
-                    {sleepDataPoints}
-                    <span className="ml-1">Sleep insights</span>
-                  </>
-                ) : (
-                  <>
-                    <BedSingle className="h-3.5 w-3.5 mr-1" />
-                    Profile
-                  </>
-                );
-              })()}
+              {progressData?.email ? (
+                "View Progress"
+              ) : (
+                <>
+                  <BedSingle className="h-3.5 w-3.5 mr-1" />
+                  Routine
+                </>
+              )}
             </ButtonComponent>
             <ButtonComponent 
               variant="outline" 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import GuestChatInterface from '@/components/onboarding/GuestChatInterface';
 import GuestOnboardingTracker from '@/components/onboarding/GuestOnboardingTracker';
@@ -10,6 +11,8 @@ export default function GuestOnboardingClient() {
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const hasRedirectedRef = useRef(false);
+  const router = useRouter();
   
   
   const fetchProgress = useCallback(async () => {
@@ -81,16 +84,38 @@ export default function GuestOnboardingClient() {
     };
   }, [guestSessionId, fetchProgress]);
   
-  const handleGetStarted = () => {
-    // Track onboarding completion
+  const navigateToConfirmation = useCallback(() => {
+    if (!guestSessionId) return;
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('guestSessionId', guestSessionId);
+    }
+
+    router.push('/waitlist/confirmation');
+  }, [guestSessionId, router]);
+
+  const handleAnalyzeRoutine = useCallback(() => {
+    if (!progressData?.email) {
+      return;
+    }
+
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('track', 'OnboardingComplete');
     }
-    
-    // Store session ID for signup
-    sessionStorage.setItem('guestSessionId', guestSessionId!);
-    window.location.href = '/signup';
-  };
+
+    navigateToConfirmation();
+  }, [progressData?.email, navigateToConfirmation]);
+
+  useEffect(() => {
+    if (
+      progressData?.progress?.isComplete &&
+      progressData?.email &&
+      !hasRedirectedRef.current
+    ) {
+      hasRedirectedRef.current = true;
+      handleAnalyzeRoutine();
+    }
+  }, [progressData, handleAnalyzeRoutine]);
   
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 p-4 h-full overflow-hidden">
@@ -106,14 +131,14 @@ export default function GuestOnboardingClient() {
       <div className="flex-1 min-h-0 hidden lg:block">
         <GuestOnboardingTracker 
           progressData={progressData}
-          onGetStarted={handleGetStarted}
+          onAnalyzeRoutine={handleAnalyzeRoutine}
         />
       </div>
       
       {/* Mobile Drawer */}
       <MobileGuestOnboardingDrawer
         progressData={progressData}
-        onGetStarted={handleGetStarted}
+        onAnalyzeRoutine={handleAnalyzeRoutine}
         isOpen={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
       />

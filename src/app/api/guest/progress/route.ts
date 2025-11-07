@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         healthMetrics: [],
         dietaryPreferences: {},
         sleepRoutine: ensureSleepRoutineShape(),
+        email: null,
         progress: {
           hasProfile: false,
           hasHealthMetrics: false,
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
       healthMetrics: session?.health_metrics,
       dietaryPreferences: session?.dietary_preferences,
       sleepRoutine,
+      email: session?.email ?? null,
       progress: {
         hasProfile,
         hasHealthMetrics: hasWeight && hasHeight,

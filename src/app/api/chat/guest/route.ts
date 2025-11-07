@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('guest_onboarding_sessions')
         .insert({ 
-          sleep_routine: emptySleepRoutine 
+          sleep_routine: emptySleepRoutine,
+          email: null,
         })
         .select('session_id')
         .single();
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabase
           .from('guest_onboarding_sessions')
           .insert({ 
-            sleep_routine: emptySleepRoutine 
+            sleep_routine: emptySleepRoutine,
+            email: null,
           })
           .select('session_id')
           .single();
@@ -117,6 +119,9 @@ export async function POST(request: NextRequest) {
 ## Profile Data
 {}
 
+## Email
+null
+
 ## Health Metrics  
 []
 
@@ -139,6 +144,9 @@ If your working memory or semantic recall contains information that conflicts wi
 
 ## Profile Data
 ${JSON.stringify(sessionData?.profile || {}, null, 2)}
+
+## Email
+${JSON.stringify(sessionData?.email ?? null, null, 2)}
 
 ## Health Metrics  
 ${JSON.stringify(sessionData?.health_metrics || [], null, 2)}
