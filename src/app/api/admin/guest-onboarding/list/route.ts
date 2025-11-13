@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { ensureSleepRoutineShape } from '@/lib/sleepRoutine';
+import { ensureSleepRoutineShape } from '@/lib/sleep-routine';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_EMAILS = new Set([

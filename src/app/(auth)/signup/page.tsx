@@ -68,8 +68,8 @@ export default function SignupPage() {
       // Clear session
       sessionStorage.removeItem('guestSessionId')
       
-      // Redirect to dashboard (don't reset loading state here)
-      router.push('/dashboard')
+      // Redirect to home (don't reset loading state here)
+      router.push('/')
       return // Exit early to prevent setLoading(false) from running
     } else if (data.user) {
       setMessage('Check your email for confirmation link!')

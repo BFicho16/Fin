@@ -1,85 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from './client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-export interface HealthDataUpdate {
-  table: string;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  data: any;
-  userId: string;
-}
-
-export interface RealtimeCallbacks {
-  onHealthMetricsUpdate?: (data: any) => void;
-  onMealsUpdate?: (data: any) => void;
-  onStepsUpdate?: (data: any) => void;
-  onExercisesUpdate?: (data: any) => void;
-  onGoalsUpdate?: (data: any) => void;
-  onRoutinesUpdate?: (data: any) => void;
-  onRoutineItemsUpdate?: (data: any) => void;
-  onRoutineCompletionsUpdate?: (data: any) => void;
-  onProfileUpdate?: (data: any) => void;
-}
-
-export function useHealthDataRealtime(userId: string, callbacks: RealtimeCallbacks = {}) {
-  const supabase = createClient();
-  const channelsRef = useRef<RealtimeChannel[]>([]);
-
-  const subscribeToTable = useCallback((
-    table: string,
-    callback?: (data: any) => void
-  ) => {
-    if (!callback) return;
-
-    const channel = supabase
-      .channel(`${table}_${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: table,
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          console.log(`Realtime update for ${table}:`, payload);
-          callback(payload);
-        }
-      )
-      .subscribe();
-
-    channelsRef.current.push(channel);
-    return channel;
-  }, [supabase, userId]);
-
-  useEffect(() => {
-    // Subscribe to all relevant tables
-    subscribeToTable('health_metrics', callbacks.onHealthMetricsUpdate);
-    subscribeToTable('meals', callbacks.onMealsUpdate);
-    subscribeToTable('steps', callbacks.onStepsUpdate);
-    subscribeToTable('exercises', callbacks.onExercisesUpdate);
-    subscribeToTable('goals', callbacks.onGoalsUpdate);
-    subscribeToTable('user_routines', callbacks.onRoutinesUpdate);
-    subscribeToTable('routine_items', callbacks.onRoutineItemsUpdate);
-    subscribeToTable('routine_completions', callbacks.onRoutineCompletionsUpdate);
-    subscribeToTable('user_profiles', callbacks.onProfileUpdate);
-
-    // Cleanup function
-    return () => {
-      channelsRef.current.forEach(channel => {
-        supabase.removeChannel(channel);
-      });
-      channelsRef.current = [];
-    };
-  }, [userId, callbacks, subscribeToTable, supabase]);
-
-  return {
-    isConnected: channelsRef.current.length > 0,
-    channelCount: channelsRef.current.length
-  };
-}
 
 // Hook for individual table subscriptions
 export function useTableRealtime<T>(

@@ -1,5 +1,15 @@
 {
   "mcpServers": {
+    "supabase-new": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=pzouiicohbuxaljkyirm"
+    },
+    "mastra": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mastra/mcp-docs-server"
+      ]
+    },
     "vercel": {
       "command": "npx",
       "args": ["@vercel/mcp-server"]

@@ -39,3 +39,6 @@ execute function public.set_updated_at();
 alter table public.guest_onboarding_sessions
   disable row level security;
 
+
+
+

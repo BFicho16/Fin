@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { SleepRoutine } from '@/lib/sleepRoutine';
+import { SleepRoutine } from '@/lib/sleep-routine';
 
 type Message = { id: string; role: string; content: string; createdAt: string; text?: string };
 

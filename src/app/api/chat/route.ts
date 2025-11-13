@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { message, threadId } = await request.json();
+    const { message, threadId, currentPage, overlayState } = await request.json();
 
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
@@ -28,6 +28,39 @@ export async function POST(request: NextRequest) {
     const runtimeContext = new RuntimeContext();
     runtimeContext.set('supabase', supabase);
     runtimeContext.set('userId', user.id);
+    if (currentPage) {
+      runtimeContext.set('currentPage', currentPage);
+    }
+    if (overlayState) {
+      runtimeContext.set('overlayState', overlayState);
+    }
+
+    // Load active and draft routines into runtime context for every message
+    // Query for active routine
+    const { data: activeRoutine, error: activeError } = await supabase
+      .from('user_routines')
+      .select('id, content, version, created_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .single();
+
+    // Query for draft routine
+    const { data: draftRoutine, error: draftError } = await supabase
+      .from('user_routines')
+      .select('id, content, version, created_at, updated_at')
+      .eq('user_id', user.id)
+      .eq('status', 'draft')
+      .is('deleted_at', null)
+      .single();
+
+    // Handle errors gracefully - no routine is not an error
+    const activeRoutineValue = activeError && activeError.code === 'PGRST116' ? null : activeRoutine;
+    const draftRoutineValue = draftError && draftError.code === 'PGRST116' ? null : draftRoutine;
+
+    // Add routines to runtime context
+    runtimeContext.set('activeRoutine', activeRoutineValue);
+    runtimeContext.set('draftRoutine', draftRoutineValue);
 
     // Create a readable stream for the response
     const stream = new ReadableStream({

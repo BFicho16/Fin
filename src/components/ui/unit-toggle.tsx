@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { UnitSystem } from '@/lib/unitConversions';
+import { UnitSystem } from '@/lib/unit-conversions';
 
 interface UnitToggleProps {
   unitSystem: UnitSystem;

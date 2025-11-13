@@ -13,7 +13,7 @@ The application combines a Next.js frontend with Mastra's powerful backend workf
 ### Frontend (Next.js 15 + Supabase Auth)
 - **Modern Web Interface**: Built with Next.js App Router and TypeScript
 - **User Authentication**: Email/password authentication with Supabase
-- **Protected Routes**: Dashboard and user-specific features
+- **Protected Routes**: User-specific features and authenticated pages
 - **Responsive Design**: Clean UI with Tailwind CSS
 
 ### Backend (Mastra Workflows)
@@ -98,10 +98,10 @@ npm start
 
 ## 🔐 Authentication Flow
 
-1. **Landing Page** (`/`): Shows login and signup links
+1. **Landing Page** (`/`): Shows login and signup links for guests, or main app with tabs for authenticated users
 2. **User Registration** (`/signup`): Create account with email/password
 3. **User Login** (`/login`): Authenticate with existing credentials
-4. **Protected Dashboard** (`/dashboard`): Access research features (requires authentication)
+4. **Main App** (`/`): Access chat interface and feature tabs (requires authentication)
 
 ## 🎯 Key Features
 
@@ -133,7 +133,7 @@ Fin/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── (auth)/            # Authentication pages
-│   │   ├── (dashboard)/       # Protected user dashboard
+│   │   ├── (app)/             # Protected user pages
 │   │   ├── api/               # API routes
 │   │   └── globals.css        # Global styles
 │   ├── components/            # Reusable React components

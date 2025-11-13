@@ -6,7 +6,7 @@ import { RuntimeContext } from '@mastra/core/runtime-context';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, guestSessionId } = await request.json();
+    const { message, guestSessionId, currentPage, overlayState } = await request.json();
     
     const supabase = await createClient();
     let sessionId = guestSessionId;
@@ -173,6 +173,12 @@ If your working memory or semantic recall contains information that conflicts wi
     // Runtime context with ONLY guest session ID
     const runtimeContext = new RuntimeContext();
     (runtimeContext as any).set('guestSessionId', sessionId);
+    if (currentPage) {
+      (runtimeContext as any).set('currentPage', currentPage);
+    }
+    if (overlayState) {
+      (runtimeContext as any).set('overlayState', overlayState);
+    }
     
     // Get conversation history from memory
     let conversationHistory = [];

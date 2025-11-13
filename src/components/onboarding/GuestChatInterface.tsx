@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageContent } from '@/components/health/MessageContent';
-// import SuggestedMessagesList from './SuggestedMessagesList';
-import { useMobileKeyboard } from '@/lib/hooks/useMobileKeyboard';
+import { useMobileKeyboard } from '@/lib/hooks/use-mobile-keyboard';
+import { usePageOverlay } from '@/components/page-overlay';
+import { usePathname } from 'next/navigation';
 
 // Type assertion to fix React 19 type conflicts
 const CardComponent = Card as any;
@@ -43,12 +44,12 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   const [isLoading, setIsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(guestSessionId);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [showSuggestedMessages, setShowSuggestedMessages] = useState(true);
-  const [isDelayingSuggestedMessages, setIsDelayingSuggestedMessages] = useState(false);
   const [hasTrackedIntent, setHasTrackedIntent] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { isKeyboardOpen } = useMobileKeyboard();
+  const pathname = usePathname();
+  const { overlayState, currentPage } = usePageOverlay();
 
 
   const scrollToBottom = () => {
@@ -60,13 +61,6 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Re-show suggested messages when progress updates (but not if we're delaying)
-  useEffect(() => {
-    if (progressData && !isDelayingSuggestedMessages) {
-      setShowSuggestedMessages(true);
-    }
-  }, [progressData, isDelayingSuggestedMessages]);
 
   // Create a session immediately on mount if we don't have one
   useEffect(() => {
@@ -153,6 +147,15 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
         body: JSON.stringify({
           message: userMessage.content,
           guestSessionId: currentSessionId,
+          currentPage: currentPage || {
+            route: pathname,
+            title: 'Onboarding',
+            link: pathname,
+          },
+          overlayState: overlayState || {
+            isOpen: false,
+            type: null,
+          },
         }),
       });
 
@@ -262,22 +265,6 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
     }
   };
 
-  const handleSuggestedMessageSelect = (message: string) => {
-    setInputMessage(message);
-    setShowSuggestedMessages(false);
-    setIsDelayingSuggestedMessages(true);
-    
-    // Re-enable suggested messages after 5 seconds
-    setTimeout(() => {
-      setIsDelayingSuggestedMessages(false);
-      setShowSuggestedMessages(true);
-    }, 10000);
-  };
-
-  const handleSuggestedMessagesDismiss = () => {
-    setShowSuggestedMessages(false);
-  };
-
   return (
     <CardComponent className={`flex flex-col h-full overflow-hidden max-h-full ${isKeyboardOpen ? 'mobile-keyboard-open' : 'mobile-keyboard-aware'}`}>
       {/* Header */}
@@ -378,17 +365,6 @@ export default function GuestChatInterface({ guestSessionId, onSessionIdReceived
           </div>
         )}
       </CardContentComponent>
-
-      {/* Suggested Messages */}
-      {/* {showSuggestedMessages && progressData && !isDelayingSuggestedMessages && (
-        <div className="px-4 pt-2 flex-shrink-0">
-          <SuggestedMessagesList
-            progressData={progressData}
-            onMessageSelect={handleSuggestedMessageSelect}
-            onDismiss={handleSuggestedMessagesDismiss}
-          />
-        </div>
-      )} */}
 
       {/* Input */}
       <CardFooterComponent className="pt-2 flex-shrink-0">

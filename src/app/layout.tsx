@@ -4,6 +4,7 @@ import Script from 'next/script'
 import Image from 'next/image'
 import './globals.css'
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground'
+import Providers from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -55,12 +56,14 @@ export default function RootLayout({
           />
         </noscript>
         {/* End Facebook Pixel Code */}
-        <div className="relative h-full mobile-no-scroll">
-          <AnimatedBackground />
-          <div className="relative z-10 h-full">
-            {children}
+        <Providers>
+          <div className="relative h-full mobile-no-scroll">
+            <AnimatedBackground />
+            <div className="relative z-10 h-full">
+              {children}
+            </div>
           </div>
-        </div>
+        </Providers>
       </body>
     </html>
   )

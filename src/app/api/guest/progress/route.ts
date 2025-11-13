@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { ensureSleepRoutineShape, calculateSleepRoutineProgress } from '@/lib/sleepRoutine';
+import { ensureSleepRoutineShape, calculateSleepRoutineProgress } from '@/lib/sleep-routine';
 
 export async function GET(request: NextRequest) {
   console.log('🚀 Guest Progress API: Starting request');
