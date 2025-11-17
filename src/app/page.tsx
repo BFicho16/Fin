@@ -3,6 +3,7 @@ import GuestOnboarding from '@/features/onboarding/guest-onboarding'
 import { PageOverlayProvider } from '@/components/page-overlay'
 import ChatPageLayout from '@/components/layouts/chat-page-layout'
 import PageTabs from '@/components/page-tabs'
+import UpgradeModal from '@/components/subscription/upgrade-modal'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -23,6 +24,7 @@ export default async function Home() {
             />
           </main>
         </div>
+        <UpgradeModal userId={user.id} />
       </PageOverlayProvider>
     )
   }

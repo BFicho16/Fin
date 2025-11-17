@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isProUser } from '@/lib/subscription';
 
 // POST: Activate draft routine
 export async function POST(
@@ -19,6 +20,42 @@ export async function POST(
 
     if (user.id !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Check if user has pro subscription
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('user_subscriptions')
+      .select('status')
+      .eq('user_id', userId)
+      .single();
+
+    // Handle case where no subscription exists (PGRST116 = no rows found, which is expected for non-subscribers)
+    const hasSubscription = subscription && (!subscriptionError || subscriptionError.code !== 'PGRST116');
+    const isPro = hasSubscription && isProUser(subscription);
+
+    // Check if this is first activation (no active or past routines)
+    const { data: existingRoutines, error: routinesError } = await supabase
+      .from('user_routines')
+      .select('id')
+      .eq('user_id', userId)
+      .in('status', ['active', 'past'])
+      .limit(1);
+
+    const isFirstActivation = !existingRoutines || existingRoutines.length === 0;
+
+    // Block activation if not pro
+    if (!isPro) {
+      if (isFirstActivation) {
+        return NextResponse.json(
+          { error: 'To activate your first routine, you need a Pro subscription. Please upgrade to continue.' },
+          { status: 403 }
+        );
+      } else {
+        return NextResponse.json(
+          { error: 'A Pro subscription is required to activate routines. Please upgrade to continue.' },
+          { status: 403 }
+        );
+      }
     }
 
     // Find draft routine

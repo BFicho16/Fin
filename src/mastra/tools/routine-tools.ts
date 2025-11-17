@@ -1,5 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
+import { isProUser } from '@/lib/subscription';
 
 // ===== GET ACTIVE ROUTINE =====
 export const getActiveRoutineTool = createTool({
@@ -283,6 +284,36 @@ export const activateDraftRoutineTool = createTool({
     const supabase = runtimeContext?.get('supabase');
     if (!supabase) {
       throw new Error('Supabase client not found in runtime context');
+    }
+
+    // Check if user has pro subscription
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('user_subscriptions')
+      .select('status')
+      .eq('user_id', userId)
+      .single();
+
+    // Handle case where no subscription exists (PGRST116 = no rows found, which is expected for non-subscribers)
+    const hasSubscription = subscription && (!subscriptionError || subscriptionError.code !== 'PGRST116');
+    const isPro = hasSubscription && isProUser(subscription);
+
+    // Check if this is first activation (no active or past routines)
+    const { data: existingRoutines, error: routinesError } = await supabase
+      .from('user_routines')
+      .select('id')
+      .eq('user_id', userId)
+      .in('status', ['active', 'past'])
+      .limit(1);
+
+    const isFirstActivation = !existingRoutines || existingRoutines.length === 0;
+
+    // Block activation if not pro
+    if (!isPro) {
+      if (isFirstActivation) {
+        throw new Error('To activate your first routine, you need a Pro subscription. Please upgrade to continue.');
+      } else {
+        throw new Error('A Pro subscription is required to activate routines. Please upgrade to continue.');
+      }
     }
 
     // Find draft routine

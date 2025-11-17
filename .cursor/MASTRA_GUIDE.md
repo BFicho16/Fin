@@ -1,922 +1,531 @@
-# Mastra.AI Guide: How to Use Agents, Tools, and Workflows
+# Mastra.AI Guide: Patterns and Practices
 
-This guide explains, in plain English, how to correctly use Mastra.AI agents, tools, and workflows in your application. It's based on official Mastra documentation and real-world patterns from this codebase.
+This guide explains the patterns we use with Mastra.AI in this codebase. It focuses on how things work, not implementation details.
 
 ## Table of Contents
 
-1. [What is Mastra.AI?](#what-is-mastraai)
-2. [Setting Up Mastra](#setting-up-mastra)
-3. [Creating Agents](#creating-agents)
-4. [The Longevity Coach Agent](#the-longevity-coach-agent)
-5. [Creating Tools](#creating-tools)
-6. [Agent Context & Page Awareness](#agent-context--page-awareness)
-7. [Using Memory](#using-memory)
-8. [Building Workflows](#building-workflows)
-9. [Best Practices](#best-practices)
-10. [Common Patterns](#common-patterns)
+1. [Core Concepts](#core-concepts)
+2. [Agents](#agents)
+3. [Tools](#tools)
+4. [Real-Time UI Updates](#real-time-ui-updates)
+5. [Memory](#memory)
+6. [Subscription Requirements](#subscription-requirements)
+7. [Key Patterns](#key-patterns)
 
 ---
 
-## What is Mastra.AI?
+## Core Concepts
 
-Mastra.AI is a framework for building AI-powered applications. Think of it as a toolkit that helps you:
+**Agents** = AI assistants that have conversations and use tools  
+**Tools** = Functions agents call to perform tasks (database operations, API calls, etc.)  
+**Memory** = Agents remember past conversations and user context  
+**Runtime Context** = Request-specific data (user ID, page info, etc.) passed to agents
 
-- **Agents**: AI assistants that can have conversations, make decisions, and use tools
-- **Tools**: Functions that agents can call to perform specific tasks (like fetching data, saving to a database, etc.)
-- **Workflows**: Multi-step processes that combine agents and tools to accomplish complex tasks
-- **Memory**: The ability for agents to remember previous conversations and context
-
-Think of an agent as a smart assistant, tools as the things it can do (like a calculator or database), and workflows as a recipe that combines multiple steps to achieve a goal.
-
----
-
-## Setting Up Mastra
-
-### Installation
-
-First, install the core Mastra package:
-
-```bash
-npm install @mastra/core
-```
-
-You'll also need packages for storage (to enable memory) and any AI model providers you want to use:
-
-```bash
-# For memory/storage (using PostgreSQL in this project)
-npm install @mastra/memory @mastra/pg
-
-# For AI models (using Google Gemini in this project)
-npm install @ai-sdk/google
-```
-
-### Environment Variables
-
-Set up your API keys in a `.env` file:
-
-```bash
-# For Google Gemini (used in this project)
-GOOGLE_GENERATIVE_AI_API_KEY="your-api-key"
-MODEL="gemini-2.5-flash-lite"
-
-# For OpenAI (alternative)
-OPENAI_API_KEY="your-api-key"
-
-# Database connection (for storage/memory)
-DATABASE_URL="your-postgres-connection-string"
-```
-
-### Creating the Main Mastra Instance
-
-Create a main Mastra instance that will hold all your agents and storage. This is typically done in `src/mastra/index.ts`:
-
-```typescript
-import { Mastra } from '@mastra/core';
-import { postgresStore } from './storage';
-import { longevityCoachAgent } from './agents/longevity-coach-agent';
-import { guestOnboardingAgent } from './agents/guest-onboarding-agent';
-
-// Main instance for authenticated users
-export const mastra = new Mastra({
-  storage: postgresStore,  // Required for memory
-  agents: {
-    longevityCoachAgent,  // Primary agent for authenticated users
-  },
-  workflows: {},
-  telemetry: {
-    enabled: false,  // Set to true for production monitoring
-  },
-});
-
-// Separate instance for guest users
-export const guestMastra = new Mastra({
-  storage: postgresStore,
-  agents: {
-    guestOnboardingAgent,  // Agent for guest onboarding
-  },
-  telemetry: {
-    enabled: false,
-  },
-});
-```
-
-**Key Points:**
-- The `storage` option enables memory across all agents
-- `mastra` instance is for authenticated users (uses `longevityCoachAgent`)
-- `guestMastra` instance is for guest users (uses `guestOnboardingAgent`)
-- All agents must be registered in the `agents` object
-- Use the appropriate instance throughout your application
+We have two agents:
+- **Longevity Coach Agent** (`longevityCoachAgent`) - for authenticated users
+- **Guest Onboarding Agent** (`guestOnboardingAgent`) - for guest users
 
 ---
 
-## Creating Agents
+## Agents
 
-An agent is an AI assistant that can have conversations, use tools, and make decisions. Think of it as a specialized worker with a specific role.
+### Agent Instructions: Behavior, Not Tools
 
-### Basic Agent Structure
-
-```typescript
-import { Agent } from '@mastra/core/agent';
-import { google } from '@ai-sdk/google';
-
-const model = google(process.env.MODEL || 'gemini-2.5-flash-lite');
-
-export const myAgent = new Agent({
-  name: 'My Agent',  // A descriptive name
-  instructions: `You are a helpful assistant that...`,  // What the agent does
-  model: model,  // The AI model to use
-  tools: {
-    // Tools go here (we'll cover this next)
-  },
-  memory: new Memory({
-    // Memory configuration (we'll cover this next)
-  }),
-});
-```
-
-### Writing Good Instructions
-
-Instructions tell the agent how to behave. Be specific and clear, but focus on behavior and personality, NOT on tool usage.
-
-**Good Example:**
-```typescript
-instructions: `You are a specialized onboarding agent for guest users. 
-Your mission is to collect their bedtime and wake-up routines through a 
-warm, supportive conversation. Always confirm data before saving it.`
-```
-
-**Bad Example:**
-```typescript
-instructions: `You are helpful.`  // Too vague!
-```
-
-**Also Bad - Don't Explain Tools in Instructions:**
-```typescript
-instructions: `Use getActiveRoutineTool to see their current active routine.
-Use createDraftRoutineTool to start a new draft...`  // ❌ Don't do this!
-```
+**Critical Rule**: Agent instructions should focus on **personality and behavior**, NOT tool usage.
 
 **Why?** Tool descriptions already explain when and how to use tools. Explaining them in instructions:
 - Duplicates information (maintenance burden)
 - Increases token costs
-- Makes instructions harder to maintain as you add more tools
-- The framework automatically shows tools to the agent based on their descriptions
+- Doesn't scale (imagine 20+ tools in instructions)
 
-**Instead:** Write clear tool descriptions and let the framework handle tool discovery.
-
-### Real Example from This Codebase
-
-Looking at `src/mastra/agents/guestOnboardingAgent.ts`:
-
-```typescript
-export const guestOnboardingAgent = new Agent({
-  name: 'Guest Onboarding Agent',
-  instructions: `You are a specialized onboarding agent...`,  // Detailed instructions
-  model: mainModel,
-  tools: {
-    getGuestDataTool,
-    updateGuestDataTool,
-    checkGuestOnboardingProgressTool,
-    deleteGuestRoutineItemTool,
-  },
-  memory: new Memory({
-    options: {
-      lastMessages: 20  // Remember last 20 messages
-    }
-  })
-});
+**Good Instructions:**
+```
+You are a supportive longevity coach focused on routines and habits. 
+Ask only ONE question at a time. Reference past conversations naturally. 
+Celebrate progress, no matter how small.
 ```
 
-### Using an Agent
-
-Once registered in your Mastra instance, you can use an agent like this:
-
-```typescript
-import { mastra } from './mastra';
-
-// For authenticated users - use longevity coach agent
-const agent = mastra.getAgent('longevityCoachAgent');
-
-// Generate a response
-const response = await agent.generate('How can I improve my sleep?', {
-  memory: {
-    thread: `longevity-coach-${user.id}`,      // Conversation thread ID
-    resource: `longevity-coach-${user.id}`,   // User identifier
-  },
-  runtimeContext,
-});
+**Bad Instructions:**
+```
+Use getActiveRoutineTool to check their routine. Use createDraftRoutineTool 
+to create drafts... ❌ Don't do this!
 ```
 
-**Key Points:**
-- Always use `mastra.getAgent()` to get a registered agent
-- For authenticated users, use `longevityCoachAgent`
-- For guest users, use `guestOnboardingAgent` from `guestMastra`
-- Use `memory.thread` and `memory.resource` with consistent IDs per user
-- The agent will automatically use its tools when needed
+### Longevity Coach Agent
+
+The primary agent for authenticated users. It:
+- Remembers entire conversation history
+- Uses semantic search to find relevant past conversations
+- Maintains structured user information (working memory)
+- References past conversations naturally
+- Makes iterative recommendations to improve routines
+
+**Memory Configuration:**
+- Full conversation history (not just recent messages)
+- Semantic recall (finds related past conversations)
+- Working memory (structured user profile that persists)
+- Tracks recommendations made and user feedback
+
+**Recommendation Cycle:**
+The agent follows an iterative improvement pattern:
+1. **Collects routine data** through conversation
+2. **Makes ONE recommendation** at a time (sleep/eating/fitness)
+3. **Asks user to try it** for a week
+4. **Automatically activates** updated routine when accepted
+5. **Iterates based on feedback** - continues the cycle
+
+**When Recommendations Are Made:**
+- After user activates their first routine
+- When user explicitly asks for suggestions
+- When user shares routine updates or performance feedback
+
+**Thread/Resource IDs:** `longevity-coach-${user.id}` (same for both)
+
+### Guest Onboarding Agent
+
+Simple agent for guest users who haven't created accounts. Uses limited memory (last 20 messages).
+
+**Thread/Resource IDs:** `guest-session-${sessionId}` (same for both)
 
 ---
 
-## The Longevity Coach Agent
+## Tools
 
-The **Longevity Coach Agent** (`longevityCoachAgent`) is the primary agent that authenticated users interact with in this application. It serves as a personal health and wellness coach that learns about users over time and provides personalized recommendations.
+### Tool Pattern: Self-Contained Descriptions
 
-### Overview
+Tool descriptions must be **complete and self-contained**. The agent uses these to understand when and how to use tools.
 
-The longevity coach agent is designed to:
-- Build a deep understanding of each user through natural conversation
-- Remember entire conversation history across all interactions
-- Maintain structured user information (profile, health metrics, goals, preferences)
-- Provide evidence-based, personalized longevity and health recommendations
-- Reference past conversations to show continuity and build rapport
-
-### Memory Configuration
-
-The longevity coach uses advanced memory features to maintain context and learn about users:
-
-```typescript
-memory: new Memory({
-  storage: postgresStore,
-  vector: pgVector,
-  embedder: 'google/text-embedding-004',
-  options: {
-    lastMessages: false,  // Access entire conversation history
-    semanticRecall: {
-      topK: 5,
-      messageRange: 3,
-      scope: 'resource',  // Search across all threads for this user
-    },
-    workingMemory: {
-      enabled: true,
-      scope: 'resource',  // Persist across all conversations
-      template: `# User Profile
-## Personal Information
-- Age/Birth Date: [if shared]
-...
-`,
-    },
-  },
-})
+**Good Description:**
+```
+Create a new draft routine for the user, or update an existing draft if one 
+already exists. Use this when the user explicitly wants to save/track routine 
+information. The draft will be displayed in real-time in the user's "My Routine" 
+tab. Only one draft exists at a time per user.
 ```
 
-**Key Memory Features:**
-
-1. **Full Conversation History** (`lastMessages: false`):
-   - The agent can access the entire conversation history, not just recent messages
-   - This allows it to reference any past conversation naturally
-
-2. **Semantic Recall** (`semanticRecall`):
-   - Uses vector search to find semantically similar messages from past conversations
-   - When a user asks about a topic, it can find relevant past discussions even if they were weeks ago
-   - `topK: 5` retrieves the 5 most relevant past messages
-   - `messageRange: 3` includes 3 messages before and after each match for context
-   - `scope: 'resource'` searches across all conversation threads for the same user
-
-3. **Working Memory** (`workingMemory`):
-   - Maintains structured information about the user in a Markdown template
-   - Automatically extracts and updates user information from conversations
-   - `scope: 'resource'` means this information persists across all conversations
-   - Stores: profile info, health metrics, goals, preferences, current routines, challenges
-
-### How It Works
-
-**Thread and Resource IDs:**
-- **Thread ID**: `longevity-coach-${user.id}` (single thread per user for continuity)
-- **Resource ID**: `longevity-coach-${user.id}` (same as thread)
-
-This means all conversations with a user happen in one continuous thread, allowing the agent to build a comprehensive understanding over time.
-
-**Memory Flow:**
-1. User sends a message → stored in `mastra_messages` table
-2. Semantic recall searches for relevant past messages → finds related conversations
-3. Working memory is updated → extracts new user information
-4. Agent responds with full context → references past conversations and user info
-
-**Example Interaction:**
-```
-User: "I've been sleeping better since we talked about my bedtime routine"
-Agent: "That's great to hear! I remember we discussed moving your bedtime to 10 PM and adding a reading routine. How many hours of sleep are you getting now?"
-```
-
-The agent can reference past conversations because:
-- Semantic recall found the previous conversation about bedtime routines
-- Working memory contains the user's sleep schedule information
-- Full conversation history provides context
-
-### Building Tools for the Longevity Coach
-
-When building tools for the longevity coach agent, follow these patterns. See `src/mastra/tools/routine-tools.ts` for a complete real-world example.
-
-#### 1. Access User ID from Runtime Context
-
-All authenticated user tools should get the user ID from runtime context:
-
-```typescript
-export const getUserRoutineTool = createTool({
-  id: 'get-user-routine',
-  description: 'Get the user\'s active routine',
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    routine: z.any(),
-  }),
-  execute: async ({ runtimeContext }) => {
-    const userId = runtimeContext?.get('userId');
-    if (!userId) {
-      throw new Error('User ID not found in runtime context');
-    }
-    
-    // Use userId to query database
-    const supabase = runtimeContext?.get('supabase');
-    // ... query user_routines table
-  },
-});
-```
-
-**Key Points:**
-- Always get `userId` from `runtimeContext.get('userId')`
-- The Supabase client is also available via `runtimeContext.get('supabase')`
-- Throw clear errors if required context is missing
-
-#### 2. Tool Naming Convention
-
-Follow the `[action][noun]Tool` pattern:
-
-- `getActiveRoutineTool` - retrieves active routine
-- `getDraftRoutineTool` - retrieves draft routine
-- `createDraftRoutineTool` - creates or updates draft routine
-- `updateDraftRoutineTool` - updates existing draft routine
-- `activateDraftRoutineTool` - activates draft routine
-
-#### 3. Writing Self-Contained Tool Descriptions
-
-**CRITICAL**: Tool descriptions must be self-contained and complete. The agent uses these descriptions to understand when and how to use tools. Do NOT explain tools in agent instructions - let the descriptions do the work.
-
-**Good Tool Description Example:**
-```typescript
-export const createDraftRoutineTool = createTool({
-  id: 'create-draft-routine',
-  description: 'Create a new draft routine for the user, or update an existing draft if one already exists. Use this when the user wants to create a new routine or update their existing routine. The draft will be displayed in real-time in the user\'s "My Routine" tab. The content should be in Markdown format. Only one draft exists at a time per user.',
-  // ...
-});
-```
-
-**What Makes a Good Description:**
-- Explains what the tool does
-- Explains when to use it (use cases)
-- Explains any important constraints or behaviors
-- Mentions user-facing effects (e.g., "displayed in real-time")
-- References related tools if needed (e.g., "if no draft exists, use createDraftRoutineTool instead")
-
-#### 4. Complete Tool Example: Routine Management
-
-Here's a complete example from `src/mastra/tools/routine-tools.ts` showing a full tool implementation:
-
-```typescript
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-
-export const getActiveRoutineTool = createTool({
-  id: 'get-active-routine',
-  description: 'Get the user\'s currently active routine. Use this to understand what routine the user currently has active, or to check if they have an active routine at all.',
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    routine: z.object({
-      id: z.string(),
-      content: z.string(),
-      version: z.number(),
-      created_at: z.string(),
-    }).nullable(),
-  }),
-  execute: async ({ runtimeContext }) => {
-    const userId = runtimeContext?.get('userId');
-    if (!userId) {
-      throw new Error('User ID not found in runtime context');
-    }
-
-    const supabase = runtimeContext?.get('supabase');
-    if (!supabase) {
-      throw new Error('Supabase client not found in runtime context');
-    }
-
-    const { data: routine, error } = await supabase
-      .from('user_routines')
-      .select('id, content, version, created_at')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .single();
-
-    if (error) {
-      // If no rows found, return null (not an error)
-      if (error.code === 'PGRST116') {
-        return { routine: null };
-      }
-      throw new Error(`Failed to fetch active routine: ${error.message}`);
-    }
-
-    return { routine };
-  },
-});
-```
-
-**Key Patterns from This Example:**
-- Clear, self-contained description
-- Proper error handling (distinguish between "not found" and actual errors)
-- Use runtime context for user-specific data
-- Return null for "not found" cases (not an error)
-- Validate required context before proceeding
-
-#### 5. Handling Draft/Active State Logic
-
-When building tools that manage state (like drafts vs active), handle the logic in the tool:
-
-```typescript
-export const createDraftRoutineTool = createTool({
-  id: 'create-draft-routine',
-  description: 'Create a new draft routine for the user, or update an existing draft if one already exists...',
-  execute: async ({ context, runtimeContext }) => {
-    // ... get userId and supabase ...
-    
-    // Check if a draft already exists
-    const { data: existingDraft } = await supabase
-      .from('user_routines')
-      .select('id, version')
-      .eq('user_id', userId)
-      .eq('is_active', false)
-      .is('deleted_at', null)
-      .single();
-
-    if (existingDraft) {
-      // Update existing draft
-      // ...
-    } else {
-      // Create new draft with next version number
-      // ...
-    }
-  },
-});
-```
-
-#### 6. Registering Tools with the Agent
-
-To add tools to the longevity coach agent, update `src/mastra/agents/longevity-coach-agent.ts`:
-
-```typescript
-import {
-  getActiveRoutineTool,
-  getDraftRoutineTool,
-  createDraftRoutineTool,
-  updateDraftRoutineTool,
-  activateDraftRoutineTool,
-} from '../tools/routine-tools';
-
-export const longevityCoachAgent = new Agent({
-  name: 'Longevity Coach Agent',
-  instructions: `...`, // Focus on behavior, NOT tool usage
-  model: mainModel,
-  tools: {
-    getActiveRoutineTool,
-    getDraftRoutineTool,
-    createDraftRoutineTool,
-    updateDraftRoutineTool,
-    activateDraftRoutineTool,
-  },
-  memory: new Memory({ ... }),
-});
-```
-
-**Important**: Do NOT explain tool usage in agent instructions. The tool descriptions handle that. Instructions should focus on the agent's personality, behavior, and high-level capabilities.
-
-### Best Practices for Longevity Coach Tools
-
-1. **Self-Contained Descriptions**: Write complete, self-contained tool descriptions that explain what, when, and why
-2. **User-Centric**: Tools should help the agent understand and help the user
-3. **Context-Aware**: Tools should use runtime context to access user-specific data
-4. **Error Handling**: Always handle errors gracefully and distinguish between "not found" and actual errors
-5. **State Management**: Handle draft/active state logic within tools, not in agent instructions
-6. **Scalable**: As you add more tools, keep descriptions in tool definitions, not in agent instructions
-
----
-
-## Creating Tools
-
-Tools are functions that agents can call to perform specific tasks. Think of them as the agent's "hands" - they let the agent interact with the world (databases, APIs, calculations, etc.).
-
-### Basic Tool Structure
-
-```typescript
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-
-export const myTool = createTool({
-  id: 'my-tool',  // Unique identifier
-  description: 'What this tool does in plain English',  // Agent uses this to decide when to call it
-  inputSchema: z.object({
-    // Define what inputs the tool expects
-    name: z.string().describe('The name of the thing'),
-    age: z.number().optional(),
-  }),
-  outputSchema: z.object({
-    // Define what the tool returns
-    success: z.boolean(),
-    message: z.string(),
-  }),
-  execute: async ({ context, runtimeContext }) => {
-    // The actual function that runs
-    const { name, age } = context;
-    
-    // Do something useful here
-    return {
-      success: true,
-      message: `Hello ${name}!`,
-    };
-  },
-});
-```
-
-### Understanding Tool Parameters
-
-- **`context`**: Contains the input data passed to the tool (matches `inputSchema`)
-- **`runtimeContext`**: Contains request-specific data (like user IDs, session IDs, page context, etc.)
+**What Makes It Good:**
+- Explains what it does
+- Explains when to use it
+- Mentions user-facing effects (real-time display)
+- Explains constraints (only one draft)
 
 ### Tool Naming Convention
 
-All Mastra tools follow the naming pattern: `[action][noun]Tool`
+Follow `[action][noun]Tool` pattern for variable names:
+- `getActiveRoutineTool`
+- `createDraftRoutineTool`
+- `updateDraftRoutineTool`
+- `activateDraftRoutineTool`
 
-Examples:
-- `getUserRoutineTool` - gets user routine (for longevity coach)
-- `updateUserProfileTool` - updates user profile (for longevity coach)
-- `getGuestDataTool` - gets guest data (for guest onboarding)
-- `updateGuestDataTool` - updates guest data (for guest onboarding)
+**Tool IDs** (used in `tool.id`) should be kebab-case:
+- `'get-active-routine'`
+- `'create-draft-routine'`
+- `'update-draft-routine'`
+- `'activate-draft-routine'`
 
-**Reference**: 
-- For longevity coach tools: See "Building Tools for the Longevity Coach" section above
-- For guest onboarding tools: See `src/mastra/tools/guestOnboardingTools.ts`
+The variable name is what Mastra returns in tool results; the ID is what we use in our code. The API route maps between them.
 
-### Best Practices for Tools
+### Accessing User Data
 
-1. **Self-Contained Descriptions**: Write complete tool descriptions that explain:
-   - What the tool does
-   - When to use it (use cases)
-   - Important constraints or behaviors
-   - User-facing effects (e.g., "displayed in real-time")
-   - Relationships to other tools (e.g., "if no draft exists, use createDraftRoutineTool instead")
-   
-   The agent reads these descriptions to understand tools - they must be complete and self-contained.
+All authenticated user tools get data from `runtimeContext`:
 
-2. **Good Schemas**: Use Zod schemas with `.describe()` to help the agent understand inputs
+```typescript
+execute: async ({ runtimeContext }) => {
+  const userId = runtimeContext?.get('userId');
+  const supabase = runtimeContext?.get('supabase');
+  // Use userId and supabase to query database
+}
+```
 
-3. **Error Handling**: Always handle errors gracefully:
-   - Distinguish between "not found" (return null) and actual errors (throw)
-   - Provide meaningful error messages
-   - Handle database-specific error codes (e.g., `PGRST116` for "no rows")
+**Key Points:**
+- Always get `userId` from runtime context (never hardcode)
+- Supabase client is also in runtime context
+- Throw clear errors if required context is missing
 
-4. **Runtime Context**: Use `runtimeContext` to access user/session data, not hardcoded values
+### Tool Name vs Tool ID
 
-5. **Naming Convention**: Follow `[action][noun]Tool` pattern (e.g., `getActiveRoutineTool`, `createDraftRoutineTool`)
+**Important**: Mastra returns tool names as variable names (e.g., `'updateDraftRoutineTool'`), but we use tool IDs (e.g., `'update-draft-routine'`) for consistency. The API route maps variable names to tool IDs before emitting to the client.
 
-6. **Scalability**: As you add more tools (20+), keep all tool logic in tool descriptions, not in agent instructions
+- **Variable name**: What Mastra returns in `chunk.payload.toolName` (matches export name)
+- **Tool ID**: What we use in code (`tool.id` field) - kebab-case format
+- **Mapping**: Defined in `src/app/api/chat/route.ts` in `toolNameToIdMap`
 
-**Note**: For building tools for the longevity coach agent, see the detailed guide in "Building Tools for the Longevity Coach" section above. See `src/mastra/tools/routine-tools.ts` for complete real-world examples.
+### Tool Result Structure
+
+Tools that modify data should return the complete updated object:
+
+```typescript
+// Good: Returns complete object
+return { draft: { id: '...', content: '...', ... } };
+
+// Bad: Returns just success flag
+return { success: true };
+```
+
+This enables real-time UI updates (see below).
 
 ---
 
-## Agent Context & Page Awareness
+## Real-Time UI Updates
 
-Agents automatically receive information about the current page and active tab through the `currentPage` object in their runtime context.
+When agents execute tools that modify data, the UI updates **immediately** without polling.
 
-### Current Page Context Structure
+### The Pattern: Tool → Cache Update
+
+1. **Agent executes tool** → Tool creates/updates data in database
+2. **Tool result streamed to client** → Included in agent's stream response
+3. **React Query cache updated** → Client immediately updates cache with tool result
+4. **UI updates instantly** → React Query triggers re-render
+
+**Why This Works:**
+- Tool result contains the exact data that was created/updated
+- We already have the data, so no need to fetch it again
+- No polling, no delays, no flakiness
+
+### How It Works
+
+**1. Chat API streams tool results**
+
+The chat API uses `fullStream` (not `textStream`) to access tool results. **Important**: Mastra returns tool names as variable names (e.g., `'updateDraftRoutineTool'`), but we use tool IDs (e.g., `'update-draft-routine'`) in our code. The API maps variable names to tool IDs:
 
 ```typescript
-{
-  currentPage: {
-    route: string;        // e.g., "/"
-    title: string;       // e.g., "Home"
-    link: string;        // e.g., "/"
-    metadata?: {
-      activeTab?: string;  // e.g., "my-routine", "activity-log", "profile"
-    }
+// Map Mastra tool names (variable names) to tool IDs (kebab-case)
+const toolNameToIdMap: Record<string, string> = {
+  'createDraftRoutineTool': 'create-draft-routine',
+  'updateDraftRoutineTool': 'update-draft-routine',
+  'activateDraftRoutineTool': 'activate-draft-routine',
+  // ... etc
+};
+
+for await (const chunk of response.fullStream) {
+  if (chunk.type === 'tool-result') {
+    const mastraToolName = chunk.payload.toolName; // e.g., 'updateDraftRoutineTool'
+    const toolId = toolNameToIdMap[mastraToolName]; // e.g., 'update-draft-routine'
+    // Emit tool result to client with mapped tool ID
   }
 }
 ```
 
-### How Context Flows to Agents
+**2. Chat interface updates cache**
 
-1. **PageOverlayProvider** (`src/components/page-overlay.tsx`):
-   - Tracks `activeTab` state
-   - Includes `activeTab` in `currentPage.metadata` when on root route (`/`)
-
-2. **Chat Interface** (`src/components/chat/authenticated-chat-interface.tsx`):
-   - Reads `activeTab` from `usePageOverlay()` hook
-   - Includes it in `currentPage.metadata` when building message payload
-
-3. **API Route** (`src/app/api/chat/route.ts`):
-   - Receives `currentPage` in request body
-   - Sets it in agent's `runtimeContext` via `runtimeContext.set('currentPage', currentPage)`
-
-4. **Agent Runtime**:
-   - Agent can access `currentPage` from runtime context
-   - Can read `currentPage.metadata.activeTab` to know which tab is visible
-
-### Using Context in Agents
-
-When creating agents, you can access the current page context:
+When tool results arrive, update React Query cache using the tool ID:
 
 ```typescript
-// In tool execution or agent logic:
-// The runtimeContext will contain currentPage if it was set
-const currentPage = runtimeContext?.get('currentPage');
-const activeTab = currentPage?.metadata?.activeTab;
+if (toolId === 'create-draft-routine') {
+  queryClient.setQueryData(
+    [['routine', 'getDraftRoutine'], { input: { userId } }],
+    result.draft
+  );
+}
 ```
 
-**Reference**: See `src/components/page-overlay.tsx` and `src/app/api/chat/route.ts` for implementation details
+**3. Components use TRPC queries**
+
+Components use TRPC queries (no polling):
+
+```typescript
+const { data: draft } = api.routine.getDraftRoutine.useQuery({ userId });
+// UI automatically updates when cache changes
+```
+
+### Adding Real-Time Updates to New Tools
+
+1. **Add tool name mapping** in `src/app/api/chat/route.ts` - Map Mastra variable name to tool ID:
+   ```typescript
+   const toolNameToIdMap: Record<string, string> = {
+     'yourNewToolName': 'your-new-tool-id',
+   };
+   ```
+
+2. **Add tool ID to watch list** in `src/app/api/chat/route.ts`:
+   ```typescript
+   const routineToolIds = ['your-new-tool-id', ...];
+   ```
+
+3. **Add cache update logic** in `src/components/chat/chat-interface-base.tsx`:
+   ```typescript
+   if (toolId === 'your-new-tool-id') {
+     queryClient.setQueryData(queryKey, result.data);
+   }
+   ```
+
+4. **Create TRPC query** (if needed) in router
+
+5. **Use TRPC query in component** (replace any polling)
+
+### When to Use This Pattern
+
+✅ Use when:
+- Tool creates/updates data displayed in UI
+- Tool result contains complete data
+- You want immediate updates
+
+❌ Don't use when:
+- Tool only reads data (no UI update needed)
+- Multiple users modify same data (use Supabase Realtime)
+- Tool result incomplete (use query invalidation instead)
 
 ---
 
-## Using Memory
+## Memory
 
-Memory allows agents to remember previous conversations and maintain context across multiple interactions.
+Memory allows agents to remember conversations and maintain context.
 
-### Why Memory Matters
+### Longevity Coach Memory
 
-Without memory, each agent call is independent - the agent forgets everything from previous conversations. With memory, agents can:
-- Reference earlier parts of the conversation
-- Remember user preferences
-- Build context over time
-- Provide more personalized responses
+Uses advanced memory features:
+- **Full history**: Access entire conversation history
+- **Semantic recall**: Finds relevant past conversations using vector search
+- **Working memory**: Structured user profile that persists across conversations
 
-### Setting Up Memory
+### Guest Onboarding Memory
 
-**Step 1: Install Memory Package**
+Simple memory: Last 20 messages only.
 
-```bash
-npm install @mastra/memory
-```
+### Thread vs Resource
 
-**Step 2: Configure Storage**
+- **Thread**: Specific conversation/session
+- **Resource**: Stable identifier for user/entity
 
-Memory needs storage to persist conversations. In this project, we use PostgreSQL:
+For both agents, use the same value for thread and resource:
+- Longevity coach: `longevity-coach-${user.id}`
+- Guest onboarding: `guest-session-${sessionId}`
 
-```typescript
-import { PostgresStore } from '@mastra/pg';
+---
 
-export const postgresStore = new PostgresStore({
-  connectionString: process.env.DATABASE_URL!,
-});
-```
+## Subscription Requirements
 
-**Step 3: Add Storage to Mastra Instance**
+### Pro Subscription for Routine Activation
 
-```typescript
-export const mastra = new Mastra({
-  storage: postgresStore,  // This enables memory for all agents
-  agents: { ... },
-});
-```
+**Requirement**: Users must have an active Pro subscription to activate routines. This applies to both:
+- First-time routine activation (no previous active/past routines)
+- Subsequent routine activations (users who have activated before)
 
-**Step 4: Configure Memory on Agent**
+**Pro Status**: A user is considered "Pro" if their subscription status is:
+- `'active'` - Active paid subscription
+- `'trialing'` - In trial period
 
-```typescript
-import { Memory } from '@mastra/memory';
+**Non-Pro Statuses**: Users are NOT Pro if:
+- No subscription exists (null)
+- Status is `'canceled'`, `'past_due'`, or `'incomplete'`
 
-export const myAgent = new Agent({
-  name: 'My Agent',
-  instructions: '...',
-  model: model,
-  memory: new Memory({
-    options: {
-      lastMessages: 20,  // Remember last 20 messages
-    },
-  }),
-});
-```
+### How It Works
 
-### Using Memory in Agent Calls
+**1. Agent Tool Validation**
 
-When calling an agent, provide memory context:
+The `activateDraftRoutineTool` checks subscription status before activation:
 
 ```typescript
-// For longevity coach agent (authenticated users)
-const response = await agent.generate('What did we discuss last week?', {
-  memory: {
-    thread: `longevity-coach-${user.id}`,    // Single thread per user
-    resource: `longevity-coach-${user.id}`,  // Same as thread
-  },
-  runtimeContext,
-});
+// Check if user has pro subscription
+const { data: subscription } = await supabase
+  .from('user_subscriptions')
+  .select('status')
+  .eq('user_id', userId)
+  .single();
 
-// For guest onboarding agent
-const response = await guestAgent.generate('What time do you go to bed?', {
-  memory: {
-    thread: `guest-session-${sessionId}`,    // Session-specific thread
-    resource: `guest-session-${sessionId}`,  // Session identifier
-  },
-});
+const isPro = subscription && 
+  (subscription.status === 'active' || subscription.status === 'trialing');
+
+// Check if this is first activation
+const { data: existingRoutines } = await supabase
+  .from('user_routines')
+  .select('id')
+  .eq('user_id', userId)
+  .in('status', ['active', 'past'])
+  .limit(1);
+
+const isFirstActivation = !existingRoutines || existingRoutines.length === 0;
+
+// Block activation if not pro
+if (!isPro) {
+  if (isFirstActivation) {
+    throw new Error('To activate your first routine, you need a Pro subscription. Please upgrade to continue.');
+  } else {
+    throw new Error('A Pro subscription is required to activate routines. Please upgrade to continue.');
+  }
+}
 ```
 
-**Understanding Thread vs Resource:**
-- **`thread`**: A specific conversation or session
-  - For longevity coach: `longevity-coach-${user.id}` (single thread per user)
-  - For guest onboarding: `guest-session-${sessionId}` (per session)
-- **`resource`**: A stable identifier for the user or entity
-  - For longevity coach: `longevity-coach-${user.id}` (same as thread)
-  - For guest onboarding: `guest-session-${sessionId}` (same as thread)
+**2. Frontend Validation**
 
-Use the same `thread` and `resource` values to maintain context across multiple calls.
-
-### Memory Options
-
-The longevity coach agent uses advanced memory configuration (see "The Longevity Coach Agent" section above). For simpler agents like guest onboarding:
+The UI also checks subscription before showing the activation dialog:
 
 ```typescript
-memory: new Memory({
-  options: {
-    lastMessages: 20,        // Keep last N messages in context
-    // Other options available for semantic recall, working memory, etc.
-  },
-}),
+const isPro = isProUser(subscription ?? null);
+const isFirstActivation = !hasExistingRoutines && !routine;
+
+if (isFirstActivation && !isPro) {
+  router.replace(`${pathname}?upgrade=true`);
+  return; // Prevent activation
+}
+```
+
+**3. Upgrade Modal Integration**
+
+When a subscription error is detected:
+- **Agent path**: Tool throws error → Chat API detects subscription-related error → Emits `upgrade-required` event → Frontend receives event → Updates URL query params → Modal opens
+- **UI path**: User clicks activate → Frontend checks subscription → Updates URL query params → Modal opens
+
+The upgrade modal automatically opens when `?upgrade=true` is in the URL (handled by `UpgradeModal` component).
+
+**4. Error Detection in Chat API**
+
+The chat API detects subscription-related errors from tool results:
+
+```typescript
+// Check if error is subscription-related
+const isSubscriptionError = isError && 
+  errorMessage &&
+  (errorMessage.includes('Pro subscription') || 
+   errorMessage.includes('subscription') ||
+   errorMessage.includes('upgrade'));
+
+// Emit upgrade-required event
+if (isSubscriptionError) {
+  controller.enqueue(
+    encoder.encode(`data: ${JSON.stringify({ type: 'upgrade-required' })}\n\n`)
+  );
+}
+```
+
+**5. Frontend Event Handling**
+
+The chat interface listens for `upgrade-required` events:
+
+```typescript
+if (parsed.type === 'upgrade-required') {
+  onUpgradeRequired(); // Updates URL query params, opens modal
+}
+```
+
+### Key Points
+
+- **Validation happens in multiple places**: Agent tool (server-side), frontend UI, and API route
+- **First activation check**: Determines if user has ever activated a routine before
+- **Error messages**: Different messages for first activation vs. subsequent activations
+- **No page reloads**: URL query params updated smoothly without navigation
+- **Stream continues**: Upgrade modal opens without interrupting the chat stream
+
+### Subscription Utility
+
+Use the `isProUser()` helper function to check subscription status:
+
+```typescript
+import { isProUser } from '@/lib/subscription';
+
+const isPro = isProUser(subscription); // subscription can be null
 ```
 
 ---
 
-## Building Workflows
+## Key Patterns
 
-Workflows are multi-step processes that combine agents and tools to accomplish complex tasks. Think of them as recipes that orchestrate multiple operations.
+### Pattern 1: Agent with Database Tools
 
-**Note**: Workflows are not currently used in this codebase. The longevity coach agent handles all user interactions through natural conversation, and the guest onboarding agent uses a simple conversational flow. If you need to build workflows in the future, refer to the [Mastra Workflows Documentation](https://mastra.ai/docs/workflows).
+**Structure:**
+1. Agent has tools that query/update database
+2. Tools get `userId` from runtime context
+3. Tools return complete data objects
+4. Tool results update UI in real-time
 
----
-
-## Best Practices
-
-### 1. Agent Instructions
-
-- **Be Specific**: Clearly define the agent's role and constraints
-- **Set Boundaries**: Tell the agent what NOT to do
-- **Provide Examples**: Include examples of good responses
-- **Focus on Behavior**: Instructions should focus on personality, tone, and behavior - NOT tool usage
-- **Don't Explain Tools**: Tool descriptions handle that - don't duplicate in instructions
-- **Update Regularly**: Refine instructions based on agent behavior
-
-### 2. Tool Design
-
-- **Single Responsibility**: Each tool should do one thing well
-- **Self-Contained Descriptions**: Write complete descriptions that explain what, when, and why - the agent uses these to understand tools
-- **Scalable**: As you add more tools, keep descriptions in tool definitions, not in agent instructions
-- **Validate Inputs**: Use Zod schemas to validate all inputs
-- **Handle Errors**: Always provide meaningful error messages and distinguish between "not found" and actual errors
-
-### 3. Memory Management
-
-- **Use Consistent IDs**: Always use the same `thread` and `resource` for related conversations
-  - Longevity coach: `longevity-coach-${user.id}` for both thread and resource
-  - Guest onboarding: `guest-session-${sessionId}` for both thread and resource
-- **Longevity Coach Memory**: Uses full conversation history, semantic recall, and working memory (see "The Longevity Coach Agent" section)
-- **Guest Onboarding Memory**: Uses limited recent messages (`lastMessages: 20`)
-
-### 5. Code Organization
-
-- **Separate Files**: Keep agents, tools, and workflows in separate files
-- **Consistent Naming**: Use clear, descriptive names
-- **Documentation**: Add comments explaining complex logic
-- **Type Safety**: Use TypeScript and Zod schemas for type safety
-
----
-
-## Common Patterns
-
-### Pattern 1: Longevity Coach Agent with Database Tool
-
-This is the primary pattern used in this codebase. See "Building Tools for the Longevity Coach" section above for complete examples.
-
-```typescript
-// Tool: Get user routine
-export const getUserRoutineTool = createTool({
-  id: 'get-user-routine',
-  description: 'Get the user\'s active routine from the database',
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    routine: z.any().nullable(),
-  }),
-  execute: async ({ runtimeContext }) => {
-    const userId = runtimeContext?.get('userId');
-    const supabase = runtimeContext?.get('supabase');
-    
-    // Query database using userId
-    const { data } = await supabase
-      .from('user_routines')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .single();
-    
-    return { routine: data || null };
-  },
-});
-
-// Agent: Longevity coach with the tool
-export const longevityCoachAgent = new Agent({
-  name: 'Longevity Coach Agent',
-  instructions: `...`,
-  model: mainModel,
-  tools: {
-    getUserRoutineTool,
-  },
-  memory: new Memory({ ... }),
-});
+**Example Flow:**
+```
+User: "Create a morning routine"
+Agent → createDraftRoutineTool → Database
+Tool returns: { draft: {...} }
+Mastra sends: toolName='createDraftRoutineTool'
+API maps: 'createDraftRoutineTool' → 'create-draft-routine'
+API emits: toolId='create-draft-routine' to client
+Client updates: React Query cache with draft data
+UI updates instantly
 ```
 
-### Pattern 2: Guest Onboarding Agent with Tools
+### Pattern 1b: Iterative Recommendation Cycle
 
-Used for guest users who haven't created an account yet.
+**Structure:**
+1. Agent analyzes user's active routine
+2. Makes ONE specific recommendation (sleep/eating/fitness)
+3. User accepts recommendation
+4. Agent automatically creates and activates updated routine
+5. Agent asks for feedback after a week
+6. Cycle continues with next recommendation
 
-```typescript
-// Tool: Update guest data
-export const updateGuestDataTool = createTool({
-  id: 'update-guest-data',
-  description: 'Update guest onboarding data',
-  execute: async ({ context, runtimeContext }) => {
-    const guestSessionId = runtimeContext?.get('guestSessionId');
-    // Update guest_onboarding_sessions table
-  },
-});
-
-// Agent: Guest onboarding with tools
-export const guestOnboardingAgent = new Agent({
-  name: 'Guest Onboarding Agent',
-  instructions: `...`,
-  model: mainModel,
-  tools: {
-    updateGuestDataTool,
-  },
-  memory: new Memory({
-    options: {
-      lastMessages: 20,
-    },
-  }),
-});
+**Example Flow:**
+```
+User: "Any recommendations?"
+Agent → getActiveRoutineTool → Analyzes routine
+Agent: "Try going to bed 30 minutes earlier. Would you like to try this for a week?"
+User: "Yes, let's try it"
+Agent → createDraftRoutineTool → activateDraftRoutineTool
+Tool returns: { routine: {...} }
+Mastra sends: toolName='activateDraftRoutineTool'
+API maps: 'activateDraftRoutineTool' → 'activate-draft-routine'
+API emits: toolId='activate-draft-routine' to client
+Client updates: React Query cache (active routine + clears draft)
+UI updates instantly
+Agent: "I've updated your routine. Try it for a week and let me know how you feel!"
 ```
 
-### Pattern 3: Longevity Coach with Full Memory
+### Pattern 2: Real-Time UI Updates
 
-The longevity coach agent uses advanced memory features:
+**Structure:**
+1. Tool creates/updates data
+2. Tool result streamed to client
+3. React Query cache updated immediately
+4. Component re-renders with new data
 
-```typescript
-export const longevityCoachAgent = new Agent({
-  name: 'Longevity Coach Agent',
-  instructions: `...`,
-  model: mainModel,
-  memory: new Memory({
-    storage: postgresStore,
-    vector: pgVector,
-    embedder: 'google/text-embedding-004',
-    options: {
-      lastMessages: false,  // Full history
-      semanticRecall: {
-        topK: 5,
-        messageRange: 3,
-        scope: 'resource',
-      },
-      workingMemory: {
-        enabled: true,
-        scope: 'resource',
-      },
-    },
-  }),
-});
+**No polling needed** - updates happen instantly when tools complete.
 
-// Use with consistent thread/resource
-await longevityCoachAgent.generate('What did we discuss last week?', {
-  memory: {
-    thread: `longevity-coach-${user.id}`,
-    resource: `longevity-coach-${user.id}`,
-  },
-  runtimeContext,
-});
-```
+### Pattern 3: Self-Contained Tool Descriptions
+
+**Structure:**
+- Tool description explains: what, when, why, constraints
+- Agent instructions focus on: personality, behavior, tone
+- Tool descriptions handle: when to use tools, how they work
+
+**Why:** Scales to 20+ tools without bloating agent instructions.
+
+### Pattern 4: Runtime Context for User Data
+
+**Structure:**
+- All user-specific data comes from `runtimeContext`
+- Never hardcode user IDs or session data
+- Runtime context includes: `userId`, `supabase`, `currentPage`, etc.
+
+**Why:** Keeps tools reusable and testable.
+
+### Pattern 5: Always Check Routine First
+
+**Structure:**
+- Before asking about routines/habits: Call `getActiveRoutineTool` first
+- Read `routine.content` completely if routine exists
+- Never ask about information already in `routine.content` - reference it instead
+- This prevents redundant questions and shows continuity
+
+**Why:** Users see the agent remembers their routine, improving trust and experience.
 
 ---
 
 ## Summary
 
-**Agents** = Smart assistants that can have conversations and use tools
-**Tools** = Functions that agents can call to perform tasks
-**Workflows** = Multi-step processes that orchestrate agents and tools
-**Memory** = The ability for agents to remember previous conversations
+**Key Principles:**
 
-**Key Takeaways:**
-1. Always register agents in your Mastra instance (`mastra` for authenticated users, `guestMastra` for guests)
-2. Write clear, specific instructions for agents - focus on behavior, NOT tool usage
-3. Design tools with single responsibilities and self-contained descriptions
-4. Tool descriptions must be complete - they explain when and how to use tools
-5. Don't explain tools in agent instructions - let tool descriptions do the work (scalable to 20+ tools)
-6. Use memory with consistent `thread` and `resource` IDs
-   - Longevity coach: `longevity-coach-${user.id}` for both
-   - Guest onboarding: `guest-session-${sessionId}` for both
-7. For longevity coach tools, always get `userId` from runtime context
-8. Follow best practices for maintainable, scalable code
+1. **Agent instructions** = Behavior and personality (NOT tool usage)
+2. **Tool descriptions** = Complete and self-contained (explain everything)
+3. **Real-time updates** = Tool results → Cache → UI (no polling)
+4. **Runtime context** = Source of truth for user/session data
+5. **Memory** = Consistent thread/resource IDs per user/session
+6. **Recommendation cycle** = Iterative improvements (one at a time, with feedback)
+7. **Always check routine first** = Read existing routine before asking questions
+8. **Subscription gating** = Pro subscription required for routine activation (checked in tool, frontend, and API)
 
-For more details, refer to:
-- [Mastra Official Documentation](https://mastra.ai/docs)
-- Your existing codebase examples in `src/mastra/`
-- This project's README.md for architecture overview
+**File References:**
+- Agents: `src/mastra/agents/`
+- Tools: `src/mastra/tools/`
+- Chat API: `src/app/api/chat/route.ts`
+- Chat Interface: `src/components/chat/chat-interface-base.tsx`
+- TRPC Routers: `src/server/routers/`
+- Subscription Utility: `src/lib/subscription.ts`
+- Upgrade Modal: `src/components/subscription/upgrade-modal.tsx`
 
+For implementation details, see the code. For Mastra concepts, see [official docs](https://mastra.ai/docs).

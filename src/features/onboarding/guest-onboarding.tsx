@@ -84,18 +84,8 @@ export default function GuestOnboarding() {
     };
   }, [guestSessionId, fetchProgress]);
   
-  const navigateToConfirmation = useCallback(() => {
-    if (!guestSessionId) return;
-
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('guestSessionId', guestSessionId);
-    }
-
-    router.push('/waitlist/confirmation');
-  }, [guestSessionId, router]);
-
-  const handleAnalyzeRoutine = useCallback(() => {
-    if (!progressData?.email) {
+  const handleAnalyzeRoutine = useCallback(async () => {
+    if (!progressData?.email || !guestSessionId) {
       return;
     }
 
@@ -103,8 +93,54 @@ export default function GuestOnboarding() {
       window.fbq('track', 'OnboardingComplete');
     }
 
-    navigateToConfirmation();
-  }, [progressData?.email, navigateToConfirmation]);
+    try {
+      // Call complete-onboarding API to create account and sign in
+      const response = await fetch('/api/auth/complete-onboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: progressData.email,
+          guestSessionId: guestSessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to complete onboarding:', errorData);
+        alert('Failed to create account. Please try again.');
+        return;
+      }
+
+      const { session } = await response.json();
+
+      // Set session in Supabase client
+      const supabase = createClient();
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('Failed to set session:', sessionError);
+        alert('Account created but failed to sign in. Please try logging in.');
+        router.push('/login');
+        return;
+      }
+
+      // Clear guest session from storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('guestSessionId');
+      }
+
+      // Redirect to home page (authenticated)
+      router.push('/');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      alert('An error occurred. Please try again.');
+    }
+  }, [progressData?.email, guestSessionId, router]);
 
   useEffect(() => {
     if (

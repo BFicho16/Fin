@@ -1,5 +1,6 @@
 'use client';
 
+import { ClipboardList, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ActiveRoutine, DraftRoutine } from '@/types/routine';
@@ -16,6 +17,7 @@ interface RoutineHeaderProps {
   onEdit?: () => void;
   onActivate?: () => void;
   onClose?: () => void;
+  onRefresh?: () => void;
 }
 
 export default function RoutineHeader({
@@ -28,6 +30,7 @@ export default function RoutineHeader({
   onEdit,
   onActivate,
   onClose,
+  onRefresh,
 }: RoutineHeaderProps) {
   // Defensive check: Never show draft view if draft is null
   // If currentView is 'draft' but draft is null, treat it as 'active' view
@@ -50,20 +53,32 @@ export default function RoutineHeader({
       return null;
     }
 
-    // Active Routine view: Show "View Draft" button only if draft exists
+    // Active Routine view: Show refresh button and "View Draft" button if draft exists
     if (effectiveView === 'active') {
-      if (draft) {
-        return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewChange('draft')}
-          >
-            View Draft
-          </Button>
-        );
-      }
-      return null;
+      return (
+        <div className="flex items-center gap-2">
+          {onRefresh && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRefresh}
+              title="Refresh routine"
+              disabled={isLoading}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+          {draft && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewChange('draft')}
+            >
+              View Draft
+            </Button>
+          )}
+        </div>
+      );
     }
 
     // Draft Routine view: Show "Activate", "Edit", and "Close" buttons
@@ -106,17 +121,24 @@ export default function RoutineHeader({
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between py-1.5 px-3 border-b h-[44px]">
+      <div className="flex items-center space-x-2">
+        <ClipboardList className="h-5 w-5 text-primary" />
+        <h3 className="text-xs font-medium">
+          {getTitle()}
+        </h3>
+        {/* Show version badge when viewing active routine */}
+        {effectiveView === 'active' && routine && (
+          <Badge variant="outline">
+            Version {routine.version}
+          </Badge>
+        )}
         {/* Only show draft badge if draft actually exists */}
         {effectiveView === 'draft' && draft && (
           <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
             Draft
           </Badge>
         )}
-        <h2 className="text-lg font-semibold">
-          {getTitle()}
-        </h2>
       </div>
       {!isLoading && renderButtons()}
     </div>

@@ -49,3 +49,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS user_routines_user_id_draft_unique
 ALTER TABLE public.user_routines
 DROP COLUMN IF EXISTS is_active;
 
+

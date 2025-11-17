@@ -18,75 +18,18 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
     }
   );
 
-  const [draft, setDraft] = useState<any>(null);
-  const [isLoadingDraft, setIsLoadingDraft] = useState(true);
-  const [draftError, setDraftError] = useState<Error | null>(null);
+  const { data: draft, isLoading: isLoadingDraft, error: draftError } = api.routine.getDraftRoutine.useQuery(
+    { userId },
+    {
+      placeholderData: (previousData) => previousData,
+    }
+  );
+
   const [currentView, setCurrentView] = useState<RoutineView>('active');
   const [hasSetInitialView, setHasSetInitialView] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const isInitialLoad = useRef(true);
-  const fetchDraftRef = useRef<((isPolling?: boolean) => Promise<void>) | null>(null);
   const displayRef = useRef<RoutineDisplayHandle>(null);
   const prevDraftRef = useRef<any>(null);
-
-  const fetchDraft = useCallback(async (isPolling = false) => {
-    try {
-      // Only set loading state on initial load, not on polling
-      if (!isPolling) {
-        setIsLoadingDraft(true);
-      }
-      setDraftError(null);
-      const response = await fetch(`/api/routines/${userId}/draft`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch draft');
-      }
-      const data = await response.json();
-      setDraft(data.draft);
-    } catch (err) {
-      setDraftError(err instanceof Error ? err : new Error('Failed to load draft'));
-      setDraft(null);
-    } finally {
-      if (!isPolling) {
-        setIsLoadingDraft(false);
-      }
-      isInitialLoad.current = false;
-    }
-  }, [userId]);
-
-  // Keep ref in sync with callback
-  useEffect(() => {
-    fetchDraftRef.current = fetchDraft;
-  }, [fetchDraft]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchDraft(false);
-  }, [fetchDraft]);
-
-  // Poll for draft updates every 2 seconds
-  // Always poll to catch newly created drafts
-  // BUT: Don't poll while user is viewing the draft (it might overwrite their edits)
-  // We'll rely on onDraftUpdate callback when saves happen
-  useEffect(() => {
-    // Only poll if we're not in the middle of editing (we can't tell from here, so we'll poll less frequently)
-    // Actually, let's disable auto-polling since it can interfere with editing
-    // The component will refresh when saves happen via onDraftUpdate callback
-    // For now, keep polling but less frequently
-    const interval = setInterval(() => {
-      if (fetchDraftRef.current) {
-        fetchDraftRef.current(true);
-      }
-    }, 5000); // Poll every 5 seconds instead of 2 to reduce interference with editing
-
-    return () => clearInterval(interval);
-  }, []); // Empty dependency array - use ref to avoid re-creating interval
-
-  // Initialize prevDraftRef when draft is first loaded
-  useEffect(() => {
-    if (!isLoadingDraft && prevDraftRef.current === null) {
-      prevDraftRef.current = draft;
-    }
-  }, [draft, isLoadingDraft]);
 
   // Calculate default view based on routine/draft availability on initial load
   // Priority: Active Routine > Draft Routine (only if draft exists) > Add Your Routine
@@ -156,7 +99,9 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
   // Convert TRPC error to Error type for RoutineDisplay
   const error = activeError 
     ? new Error(activeError.message || 'Failed to load routine')
-    : draftError;
+    : draftError
+    ? new Error(draftError.message || 'Failed to load draft')
+    : null;
 
   // Handle view changes from header
   // Prevent switching to 'draft' view if draft is null
@@ -194,33 +139,29 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
     displayRef.current?.triggerActivate();
   }, []);
 
-  // Handle draft update - refresh draft and potentially switch views
+  // Handle refresh button - refetch active routine from database
+  const handleRefresh = useCallback(async () => {
+    await utils.routine.getActiveRoutine.refetch({ userId });
+  }, [utils.routine.getActiveRoutine, userId]);
+
+  // Handle draft update - invalidate queries to trigger refetch
+  // Cache updates from tool results should handle most cases, but this is a fallback
   const handleDraftUpdate = useCallback(async () => {
-    // Fetch draft and check if it exists
-    let draftExists = false;
-    try {
-      const response = await fetch(`/api/routines/${userId}/draft`);
-      if (response.ok) {
-        const data = await response.json();
-        draftExists = data.draft !== null;
-        setDraft(data.draft);
-      } else {
-        setDraft(null);
-      }
-    } catch (err) {
-      setDraft(null);
-    }
+    // Invalidate both queries to ensure fresh data
+    await Promise.all([
+      utils.routine.getActiveRoutine.invalidate({ userId }),
+      utils.routine.getDraftRoutine.invalidate({ userId }),
+    ]);
     
-    // After activating, invalidate and refetch the active routine query
-    // This ensures the active routine is updated after activation
-    await utils.routine.getActiveRoutine.invalidate({ userId });
+    // After invalidating, check if draft still exists to determine view
+    // The query will refetch and update, then the useEffect will handle view switching
+    const draftData = await utils.routine.getDraftRoutine.fetch({ userId });
     
     // Immediately switch to active view if draft is null (draft was activated)
-    // No timeout delay - switch immediately to prevent showing draft header
-    if (currentView === 'draft' && !draftExists) {
+    if (currentView === 'draft' && !draftData) {
       setCurrentView('active');
     }
-  }, [utils.routine.getActiveRoutine, userId, currentView]);
+  }, [utils.routine.getActiveRoutine, utils.routine.getDraftRoutine, userId, currentView]);
 
   return (
     <div className="h-full flex flex-col">
@@ -235,6 +176,7 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
           onClose={handleClose}
           onEdit={handleEdit}
           onActivate={handleActivate}
+          onRefresh={handleRefresh}
         />
       </div>
       <div className="flex-1 overflow-y-auto min-h-0">

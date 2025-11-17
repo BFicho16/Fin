@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { PageOverlayProvider } from '@/components/page-overlay';
 import ChatPageLayout from '@/components/layouts/chat-page-layout';
+import UpgradeModal from '@/components/subscription/upgrade-modal';
 
 export default async function AppLayout({
   children,
@@ -29,7 +30,9 @@ export default async function AppLayout({
           />
         </main>
       </div>
+      <UpgradeModal userId={user.id} />
     </PageOverlayProvider>
   );
 }
+
 

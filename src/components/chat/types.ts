@@ -1,3 +1,5 @@
+import { QueryClient } from '@tanstack/react-query';
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -12,5 +14,8 @@ export interface ChatConfig {
   onMessageComplete?: () => Promise<void> | void;
   getMessagePayload?: (message: string, context?: any) => any;
   parseStreamResponse?: (data: any) => { content?: string; sessionId?: string; error?: string };
+  queryClient?: QueryClient;
+  userId?: string;
 }
+
 

@@ -53,6 +53,7 @@ Create a `.env` file with:
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
 DATABASE_URL="your-supabase-database-connection-string"
 
 # AI API Keys
@@ -75,6 +76,12 @@ Run the SQL migration in your Supabase SQL editor:
 2. Navigate to Database → Connection String
 3. Copy the URI connection string (not the session pooler)
 4. Replace `[YOUR-PASSWORD]` with your database password
+
+**Note:** To get your `SUPABASE_SERVICE_ROLE_KEY`:
+1. Go to your Supabase project settings
+2. Navigate to API → Project API keys
+3. Copy the `service_role` key (keep this secret - it bypasses Row Level Security)
+4. This key is required for server-side account creation without email confirmation
 
 ### Development
 

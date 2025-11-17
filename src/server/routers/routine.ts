@@ -44,6 +44,47 @@ export const routineRouter = router({
       return routine;
     }),
 
+  getDraftRoutine: publicProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      const supabase = await createClient();
+      
+      // Verify the user is authenticated and matches the userId
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('Unauthorized');
+      }
+
+      if (user.id !== input.userId) {
+        throw new Error('Forbidden');
+      }
+
+      const { data: draft, error } = await supabase
+        .from('user_routines')
+        .select('id, content, version, created_at, updated_at')
+        .eq('user_id', input.userId)
+        .eq('status', 'draft')
+        .is('deleted_at', null)
+        .single();
+
+      if (error) {
+        // If no rows found, return null (not an error)
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw new Error(`Failed to fetch draft routine: ${error.message}`);
+      }
+
+      return draft;
+    }),
+
   createRoutine: publicProcedure
     .input(
       z.object({

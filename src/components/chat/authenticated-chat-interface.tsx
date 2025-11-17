@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Menu } from 'lucide-react';
+import Image from 'next/image';
+import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
@@ -17,6 +19,8 @@ import { ChatInterfaceBase } from './chat-interface-base';
 import { Message, ChatConfig } from './types';
 import { usePageOverlay } from '@/components/page-overlay';
 import { usePathname } from 'next/navigation';
+import { api } from '@/lib/trpc-client';
+import { useToast } from '@/components/ui/toast';
 
 // Type assertion to fix React 19 type conflicts
 const ButtonComponent = Button as any;
@@ -34,7 +38,7 @@ interface AuthenticatedChatInterfaceProps {
   onContentOpenChange?: (open: boolean) => void;
 }
 
-export default function AuthenticatedChatInterface({ 
+function AuthenticatedChatInterfaceContent({ 
   userId, 
   userEmail, 
   threadId, 
@@ -44,13 +48,42 @@ export default function AuthenticatedChatInterface({
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [currentThreadId, setCurrentThreadId] = useState(threadId || `longevity-coach-${userId}`);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const queryClient = useQueryClient();
   const { overlayState, currentPage, activeTab } = usePageOverlay();
   const pathname = usePathname();
+  const { showToast } = useToast();
+
+  // Query subscription status
+  const { data: subscription, isLoading: isLoadingSubscription } = api.subscription.getSubscription.useQuery();
+  const portalMutation = api.subscription.getCustomerPortalUrl.useMutation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
+  };
+
+  const handleSubscriptionClick = async () => {
+    if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trialing')) {
+      // No subscription or not active - open upgrade modal
+      router.push('/?upgrade=true');
+    } else {
+      // Has active subscription - open customer portal
+      try {
+        const result = await portalMutation.mutateAsync();
+        if (result.url) {
+          window.location.href = result.url;
+        }
+      } catch (error) {
+        console.error('Error opening customer portal:', error);
+        showToast({
+          title: 'Error',
+          description: 'Failed to open subscription management. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
   };
 
   // Load chat history on mount
@@ -81,6 +114,8 @@ export default function AuthenticatedChatInterface({
     apiEndpoint: '/api/chat',
     placeholder: 'Tell me about your routine and habits...',
     showTimestamp: true,
+    queryClient,
+    userId,
     getMessagePayload: (message: string) => {
       // If on root route, ensure activeTab is included in metadata
       let pageMetadata = currentPage;
@@ -111,6 +146,13 @@ export default function AuthenticatedChatInterface({
   const header = (
     <>
       <div className="flex items-center space-x-2">
+        <Image 
+          src="/fin-transparent.png" 
+          alt="Fin Logo" 
+          width={24} 
+          height={24} 
+          className="h-5 w-5 rounded-lg"
+        />
         <h3 className="text-xs font-medium">
           Longevity Coach
         </h3>
@@ -122,6 +164,16 @@ export default function AuthenticatedChatInterface({
           </ButtonComponent>
         </DropdownMenuTriggerComponent>
         <DropdownMenuContentComponent align="end">
+          {!isLoadingSubscription && (
+            <DropdownMenuItemComponent
+              onClick={handleSubscriptionClick}
+              disabled={portalMutation.isPending}
+            >
+              {subscription && (subscription.status === 'active' || subscription.status === 'trialing')
+                ? 'Manage Subscription'
+                : 'Fin Pro'}
+            </DropdownMenuItemComponent>
+          )}
           <DropdownMenuItemComponent disabled>
             Settings
           </DropdownMenuItemComponent>
@@ -162,7 +214,23 @@ export default function AuthenticatedChatInterface({
           setCurrentThreadId(`longevity-coach-${userId}`);
         }
       }}
+      onUpgradeRequired={() => {
+        console.log('[AUTH CHAT] Upgrade required - updating query params to open modal');
+        // Update query params without page reload (same pattern as modal uses when closing)
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('upgrade', 'true');
+        const newUrl = `${pathname}?${params.toString()}`;
+        router.replace(newUrl);
+      }}
     />
+  );
+}
+
+export default function AuthenticatedChatInterface(props: AuthenticatedChatInterfaceProps) {
+  return (
+    <Suspense fallback={null}>
+      <AuthenticatedChatInterfaceContent {...props} />
+    </Suspense>
   );
 }
 

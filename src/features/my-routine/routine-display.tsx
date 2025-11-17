@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,6 +18,8 @@ import {
 import RoutineEmptyCard from './routine-empty-card';
 import { ActiveRoutine, DraftRoutine } from '@/types/routine';
 import { RoutineView } from './routine-header';
+import { api } from '@/lib/trpc-client';
+import { isProUser } from '@/lib/subscription';
 
 interface RoutineDisplayProps {
   routine: ActiveRoutine | null;
@@ -49,11 +52,21 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
     },
     ref
   ) => {
+    const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isActivating, setIsActivating] = useState(false);
     const [showActivateDialog, setShowActivateDialog] = useState(false);
+    
+    // Get subscription status
+    const { data: subscription } = api.subscription.getSubscription.useQuery();
+    
+    // Get routine history to check if this is first activation
+    const { data: routineHistory } = api.routine.getRoutineHistory.useQuery(
+      { userId, limit: 1 },
+      { enabled: !!userId }
+    );
 
     // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
@@ -64,6 +77,25 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
       },
       triggerActivate: () => {
         if (draft) {
+          // Check if user is pro
+          const isPro = isProUser(subscription ?? null);
+          
+          // Check if this is first activation (no active or past routines)
+          const hasExistingRoutines = routineHistory && routineHistory.length > 0;
+          const isFirstActivation = !hasExistingRoutines && !routine;
+          
+          // If first activation and not pro, open upgrade modal
+          if (isFirstActivation && !isPro) {
+            router.push('/?upgrade=true');
+            return;
+          }
+          
+          // If not pro (even if not first activation), block activation
+          if (!isPro) {
+            router.push('/?upgrade=true');
+            return;
+          }
+          
           setShowActivateDialog(true);
         }
       },
@@ -118,6 +150,27 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
     const handleActivate = async () => {
       if (!draft) return;
 
+      // Check if user is pro
+      const isPro = isProUser(subscription ?? null);
+      
+      // Check if this is first activation (no active or past routines)
+      const hasExistingRoutines = routineHistory && routineHistory.length > 0;
+      const isFirstActivation = !hasExistingRoutines && !routine;
+      
+      // If first activation and not pro, open upgrade modal
+      if (isFirstActivation && !isPro) {
+        setShowActivateDialog(false);
+        router.push('/?upgrade=true');
+        return;
+      }
+      
+      // If not pro (even if not first activation), block activation
+      if (!isPro) {
+        setShowActivateDialog(false);
+        router.push('/?upgrade=true');
+        return;
+      }
+
       setIsActivating(true);
       try {
         const response = await fetch(`/api/routines/${userId}/activate`, {
@@ -126,6 +179,12 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
 
         if (!response.ok) {
           const error = await response.json();
+          // If error is about subscription, redirect to upgrade
+          if (response.status === 403 && error.error?.includes('subscription')) {
+            setShowActivateDialog(false);
+            router.push('/?upgrade=true');
+            return;
+          }
           throw new Error(error.error || 'Failed to activate routine');
         }
 

@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [loginMethod, setLoginMethod] = useState<'password' | 'magiclink'>('password')
   const router = useRouter()
   const supabase = createClient()
 
@@ -21,7 +23,9 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setMessage('')
 
+    if (loginMethod === 'password') {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -31,6 +35,21 @@ export default function LoginPage() {
       setError(error.message)
     } else {
       router.push('/')
+      }
+    } else {
+      // Magic link login
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setMessage('Check your email for the magic link to sign in.')
+      }
     }
 
     setLoading(false)
@@ -53,6 +72,33 @@ export default function LoginPage() {
         </p>
       </div>
       
+      <div className="flex gap-2 mb-4">
+        <Button
+          type="button"
+          variant={loginMethod === 'password' ? 'default' : 'outline'}
+          onClick={() => {
+            setLoginMethod('password')
+            setError('')
+            setMessage('')
+          }}
+          className="flex-1"
+        >
+          Password
+        </Button>
+        <Button
+          type="button"
+          variant={loginMethod === 'magiclink' ? 'default' : 'outline'}
+          onClick={() => {
+            setLoginMethod('magiclink')
+            setError('')
+            setMessage('')
+          }}
+          className="flex-1"
+        >
+          Magic Link
+        </Button>
+      </div>
+      
       <form className="space-y-4" onSubmit={handleLogin}>
         <div className="space-y-2">
           <Label htmlFor="email">Email address</Label>
@@ -68,6 +114,7 @@ export default function LoginPage() {
           />
         </div>
         
+        {loginMethod === 'password' && (
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <Input
@@ -81,10 +128,17 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        )}
 
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {message && (
+          <Alert>
+            <AlertDescription>{message}</AlertDescription>
           </Alert>
         )}
 
@@ -93,7 +147,10 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full"
         >
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading 
+            ? (loginMethod === 'password' ? 'Signing in...' : 'Sending magic link...')
+            : (loginMethod === 'password' ? 'Sign in' : 'Send magic link')
+          }
         </Button>
       </form>
     </div>

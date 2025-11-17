@@ -36,6 +36,7 @@ interface ChatInterfaceBaseProps {
   emptyState?: ReactNode;
   initialMessages?: Message[];
   onMessagesChange?: (messages: Message[]) => void;
+  onUpgradeRequired?: () => void;
   className?: string;
 }
 
@@ -45,6 +46,7 @@ export function ChatInterfaceBase({
   emptyState,
   initialMessages = [],
   onMessagesChange,
+  onUpgradeRequired,
   className = '',
 }: ChatInterfaceBaseProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -208,6 +210,252 @@ export function ChatInterfaceBase({
             try {
               const parsed = JSON.parse(data);
               
+              // Handle upgrade-required events
+              if (parsed.type === 'upgrade-required') {
+                console.log('[CHAT INTERFACE] Upgrade required event received');
+                if (onUpgradeRequired) {
+                  try {
+                    onUpgradeRequired();
+                    console.log('[CHAT INTERFACE] Upgrade required callback executed');
+                  } catch (error) {
+                    console.error('[CHAT INTERFACE] Error in upgrade required callback:', error);
+                  }
+                } else {
+                  console.warn('[CHAT INTERFACE] Upgrade required event received but no callback provided');
+                }
+                // Don't return early - let other processing continue
+                continue;
+              }
+              
+              // Handle tool result events for routine updates
+              if (parsed.type === 'tool-result' && config.queryClient && config.userId) {
+                const { toolId, result, isError } = parsed;
+                
+                console.log('[CHAT INTERFACE] Tool result received:', {
+                  toolId,
+                  hasResult: !!result,
+                  resultStructure: result ? Object.keys(result) : null,
+                  result,
+                  isError,
+                  hasQueryClient: !!config.queryClient,
+                  userId: config.userId,
+                });
+                
+                // Only update cache if tool succeeded and result has data
+                if (!isError && result) {
+                  try {
+                    if (toolId === 'create-draft-routine' || toolId === 'update-draft-routine') {
+                      // Update draft routine cache
+                      const draftData = result.draft || result;
+                      console.log('[CHAT INTERFACE] Processing draft routine update:', {
+                        toolId,
+                        draftData,
+                        hasId: draftData?.id,
+                      });
+                      
+                      if (draftData && draftData.id) {
+                        // First, check if there's an existing query in cache to match its format
+                        const allQueries = config.queryClient.getQueryCache().getAll();
+                        const draftQuery = allQueries.find((q) => {
+                          const key = q.queryKey;
+                          return (
+                            Array.isArray(key) &&
+                            Array.isArray(key[0]) &&
+                            key[0][0] === 'routine' &&
+                            key[0][1] === 'getDraftRoutine'
+                          );
+                        });
+                        
+                        console.log('[CHAT INTERFACE] Found existing draft query in cache:', {
+                          found: !!draftQuery,
+                          existingKey: draftQuery?.queryKey,
+                          existingKeyString: draftQuery?.queryKey ? JSON.stringify(draftQuery.queryKey) : null,
+                        });
+                        
+                        // Try to use existing query key format first (most reliable)
+                        let cacheUpdated = false;
+                        if (draftQuery) {
+                          try {
+                            config.queryClient.setQueryData(draftQuery.queryKey, draftData);
+                            console.log('[CHAT INTERFACE] ✓ Cache update successful using existing query key format');
+                            cacheUpdated = true;
+                          } catch (e) {
+                            console.error('[CHAT INTERFACE] Failed to update using existing query key:', e);
+                          }
+                        }
+                        
+                        // Fallback: Try known query key formats
+                        if (!cacheUpdated) {
+                          const queryKeyFormat1 = [
+                            ['routine', 'getDraftRoutine'],
+                            { type: 'query', input: { userId: config.userId } },
+                          ];
+                          const queryKeyFormat2 = [
+                            ['routine', 'getDraftRoutine'],
+                            { input: { userId: config.userId } },
+                          ];
+                          
+                          console.log('[CHAT INTERFACE] Trying fallback query key formats:', {
+                            format1: queryKeyFormat1,
+                            format2: queryKeyFormat2,
+                          });
+                          
+                          try {
+                            config.queryClient.setQueryData(queryKeyFormat1, draftData);
+                            console.log('[CHAT INTERFACE] ✓ Cache update successful with format 1 (type: query)');
+                            cacheUpdated = true;
+                          } catch (e1) {
+                            console.log('[CHAT INTERFACE] Format 1 failed, trying format 2:', e1);
+                            try {
+                              config.queryClient.setQueryData(queryKeyFormat2, draftData);
+                              console.log('[CHAT INTERFACE] ✓ Cache update successful with format 2 (no type)');
+                              cacheUpdated = true;
+                            } catch (e2) {
+                              console.error('[CHAT INTERFACE] All query key formats failed:', e2);
+                            }
+                          }
+                        }
+                        
+                        // Log all relevant queries for debugging
+                        const relevantQueries = allQueries.filter((q) => {
+                          const key = q.queryKey;
+                          return (
+                            Array.isArray(key) &&
+                            Array.isArray(key[0]) &&
+                            key[0][0] === 'routine' &&
+                            (key[0][1] === 'getDraftRoutine' || key[0][1] === 'getActiveRoutine')
+                          );
+                        });
+                        console.log('[CHAT INTERFACE] All relevant TRPC queries in cache:', {
+                          count: relevantQueries.length,
+                          queryKeys: relevantQueries.map((q) => ({
+                            key: q.queryKey,
+                            stringified: JSON.stringify(q.queryKey),
+                            state: q.state.status,
+                          })),
+                        });
+                      } else {
+                        console.log('[CHAT INTERFACE] Draft data missing or invalid:', draftData);
+                      }
+                    } else if (toolId === 'activate-draft-routine') {
+                      // Update active routine cache and clear draft cache
+                      const routineData = result.routine || result;
+                      console.log('[CHAT INTERFACE] Processing activate routine update:', {
+                        routineData,
+                        hasId: routineData?.id,
+                      });
+                      
+                      if (routineData && routineData.id) {
+                        // First, check if there are existing queries in cache to match their format
+                        const allQueries = config.queryClient.getQueryCache().getAll();
+                        const activeQuery = allQueries.find((q) => {
+                          const key = q.queryKey;
+                          return (
+                            Array.isArray(key) &&
+                            Array.isArray(key[0]) &&
+                            key[0][0] === 'routine' &&
+                            key[0][1] === 'getActiveRoutine'
+                          );
+                        });
+                        const draftQuery = allQueries.find((q) => {
+                          const key = q.queryKey;
+                          return (
+                            Array.isArray(key) &&
+                            Array.isArray(key[0]) &&
+                            key[0][0] === 'routine' &&
+                            key[0][1] === 'getDraftRoutine'
+                          );
+                        });
+                        
+                        // Update active routine
+                        let activeUpdated = false;
+                        if (activeQuery) {
+                          try {
+                            config.queryClient.setQueryData(activeQuery.queryKey, routineData);
+                            console.log('[CHAT INTERFACE] ✓ Active routine cache update successful using existing query key format');
+                            activeUpdated = true;
+                          } catch (e) {
+                            console.error('[CHAT INTERFACE] Failed to update active using existing query key:', e);
+                          }
+                        }
+                        
+                        // Fallback: Try known query key formats for active routine
+                        if (!activeUpdated) {
+                          const activeQueryKey1 = [
+                            ['routine', 'getActiveRoutine'],
+                            { type: 'query', input: { userId: config.userId } },
+                          ];
+                          const activeQueryKey2 = [
+                            ['routine', 'getActiveRoutine'],
+                            { input: { userId: config.userId } },
+                          ];
+                          
+                          try {
+                            config.queryClient.setQueryData(activeQueryKey1, routineData);
+                            console.log('[CHAT INTERFACE] ✓ Active routine cache update successful with format 1');
+                            activeUpdated = true;
+                          } catch (e1) {
+                            console.log('[CHAT INTERFACE] Active format 1 failed, trying format 2:', e1);
+                            try {
+                              config.queryClient.setQueryData(activeQueryKey2, routineData);
+                              console.log('[CHAT INTERFACE] ✓ Active routine cache update successful with format 2');
+                              activeUpdated = true;
+                            } catch (e2) {
+                              console.error('[CHAT INTERFACE] All active routine query key formats failed:', e2);
+                            }
+                          }
+                        }
+                        
+                        // Clear draft cache (draft was activated)
+                        if (draftQuery) {
+                          try {
+                            config.queryClient.setQueryData(draftQuery.queryKey, null);
+                            console.log('[CHAT INTERFACE] ✓ Draft cache cleared using existing query key format');
+                          } catch (e) {
+                            console.error('[CHAT INTERFACE] Failed to clear draft using existing query key:', e);
+                          }
+                        } else {
+                          // Fallback: Try known query key formats for draft
+                          const draftQueryKey1 = [
+                            ['routine', 'getDraftRoutine'],
+                            { type: 'query', input: { userId: config.userId } },
+                          ];
+                          const draftQueryKey2 = [
+                            ['routine', 'getDraftRoutine'],
+                            { input: { userId: config.userId } },
+                          ];
+                          
+                          try {
+                            config.queryClient.setQueryData(draftQueryKey1, null);
+                            console.log('[CHAT INTERFACE] ✓ Draft cache cleared with format 1');
+                          } catch (e1) {
+                            console.log('[CHAT INTERFACE] Draft clear format 1 failed, trying format 2:', e1);
+                            try {
+                              config.queryClient.setQueryData(draftQueryKey2, null);
+                              console.log('[CHAT INTERFACE] ✓ Draft cache cleared with format 2');
+                            } catch (e2) {
+                              console.error('[CHAT INTERFACE] All draft clear query key formats failed:', e2);
+                            }
+                          }
+                        }
+                      } else {
+                        console.log('[CHAT INTERFACE] Routine data missing or invalid:', routineData);
+                      }
+                    }
+                  } catch (cacheError) {
+                    console.error('[CHAT INTERFACE] Error updating React Query cache:', cacheError);
+                    // Fallback: invalidate queries to trigger refetch
+                    config.queryClient.invalidateQueries({
+                      queryKey: [['routine']],
+                    });
+                    console.log('[CHAT INTERFACE] Fallback: invalidated all routine queries');
+                  }
+                } else {
+                  console.log('[CHAT INTERFACE] Tool result has error or no result:', { isError, hasResult: !!result });
+                }
+                // Continue processing - don't return, let text content flow through
+              }
+              
               // Use custom parser if provided, otherwise use default
               const parsedData = config.parseStreamResponse 
                 ? config.parseStreamResponse(parsed)
@@ -264,7 +512,7 @@ export function ChatInterfaceBase({
   return (
     <CardComponent className={`flex flex-col h-full overflow-hidden max-h-full ${isKeyboardOpen ? 'mobile-keyboard-open' : 'mobile-keyboard-aware'} ${className}`}>
       {/* Header */}
-      <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg">
+      <div className="py-1.5 px-3 flex-shrink-0 border-b bg-background/95 rounded-t-lg h-[44px]">
         <div className="flex items-center justify-between">
           {header}
         </div>
