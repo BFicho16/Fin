@@ -717,7 +717,7 @@ export function ChatInterfaceBase({
             placeholder={config.placeholder}
             disabled={isLoading}
             rows={1}
-            className="!min-h-0 text-sm"
+            className="!min-h-0 text-base md:text-sm"
             style={{ 
               maxHeight: '120px',
               overflow: 'hidden',
