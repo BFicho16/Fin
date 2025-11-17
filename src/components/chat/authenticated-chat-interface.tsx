@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import { Menu, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
@@ -30,6 +30,7 @@ const DropdownMenuContentComponent = DropdownMenuContent as any;
 const DropdownMenuItemComponent = DropdownMenuItem as any;
 const DropdownMenuSeparatorComponent = DropdownMenuSeparator as any;
 const MenuIcon = Menu as any;
+const CalendarIcon = Calendar as any;
 
 interface AuthenticatedChatInterfaceProps {
   userId: string;
@@ -51,7 +52,7 @@ function AuthenticatedChatInterfaceContent({
   const searchParams = useSearchParams();
   const supabase = createClient();
   const queryClient = useQueryClient();
-  const { overlayState, currentPage, activeTab } = usePageOverlay();
+  const { overlayState, currentPage, activeTab, setActiveTab } = usePageOverlay();
   const pathname = usePathname();
   const { showToast } = useToast();
 
@@ -143,6 +144,13 @@ function AuthenticatedChatInterfaceContent({
     },
   };
 
+  const handleRoutineClick = () => {
+    setActiveTab('my-routine');
+    if (onContentOpenChange) {
+      onContentOpenChange(true);
+    }
+  };
+
   const header = (
     <>
       <div className="flex items-center space-x-2">
@@ -157,32 +165,42 @@ function AuthenticatedChatInterfaceContent({
           Longevity Coach
         </h3>
       </div>
-      <DropdownMenuComponent>
-        <DropdownMenuTriggerComponent asChild>
-          <ButtonComponent variant="ghost" size="icon">
-            <MenuIcon className="h-4 w-4" />
-          </ButtonComponent>
-        </DropdownMenuTriggerComponent>
-        <DropdownMenuContentComponent align="end">
-          {!isLoadingSubscription && (
-            <DropdownMenuItemComponent
-              onClick={handleSubscriptionClick}
-              disabled={portalMutation.isPending}
-            >
-              {subscription && (subscription.status === 'active' || subscription.status === 'trialing')
-                ? 'Manage Subscription'
-                : 'Fin Pro'}
+      <div className="flex items-center space-x-2">
+        <ButtonComponent 
+          variant="outline"
+          size="sm"
+          onClick={handleRoutineClick}
+        >
+          <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+          My Routine
+        </ButtonComponent>
+        <DropdownMenuComponent>
+          <DropdownMenuTriggerComponent asChild>
+            <ButtonComponent variant="ghost" size="icon">
+              <MenuIcon className="h-4 w-4" />
+            </ButtonComponent>
+          </DropdownMenuTriggerComponent>
+          <DropdownMenuContentComponent align="end">
+            {!isLoadingSubscription && (
+              <DropdownMenuItemComponent
+                onClick={handleSubscriptionClick}
+                disabled={portalMutation.isPending}
+              >
+                {subscription && (subscription.status === 'active' || subscription.status === 'trialing')
+                  ? 'Manage Subscription'
+                  : 'Fin Pro'}
+              </DropdownMenuItemComponent>
+            )}
+            <DropdownMenuItemComponent disabled>
+              Settings
             </DropdownMenuItemComponent>
-          )}
-          <DropdownMenuItemComponent disabled>
-            Settings
-          </DropdownMenuItemComponent>
-          <DropdownMenuSeparatorComponent />
-          <DropdownMenuItemComponent onClick={handleLogout}>
-            Logout
-          </DropdownMenuItemComponent>
-        </DropdownMenuContentComponent>
-      </DropdownMenuComponent>
+            <DropdownMenuSeparatorComponent />
+            <DropdownMenuItemComponent onClick={handleLogout}>
+              Logout
+            </DropdownMenuItemComponent>
+          </DropdownMenuContentComponent>
+        </DropdownMenuComponent>
+      </div>
     </>
   );
 

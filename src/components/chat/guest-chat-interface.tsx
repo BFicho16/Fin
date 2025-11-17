@@ -205,6 +205,7 @@ export default function GuestChatInterface({
       emptyState={emptyState}
       initialMessages={messages}
       onMessagesChange={setMessages}
+      showFooterHelperText={true}
     />
   );
 }

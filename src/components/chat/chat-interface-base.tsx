@@ -38,6 +38,7 @@ interface ChatInterfaceBaseProps {
   onMessagesChange?: (messages: Message[]) => void;
   onUpgradeRequired?: () => void;
   className?: string;
+  showFooterHelperText?: boolean;
 }
 
 export function ChatInterfaceBase({
@@ -48,6 +49,7 @@ export function ChatInterfaceBase({
   onMessagesChange,
   onUpgradeRequired,
   className = '',
+  showFooterHelperText = false,
 }: ChatInterfaceBaseProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputMessage, setInputMessage] = useState('');
@@ -690,7 +692,7 @@ export function ChatInterfaceBase({
       </CardContentComponent>
 
       {/* Input */}
-      <CardFooterComponent className="pt-2 flex-shrink-0 items-start">
+      <CardFooterComponent className="pt-2 flex-shrink-0 items-start flex-col">
         <InputGroupComponent className="w-full !h-auto flex-col items-stretch">
           <InputGroupTextareaComponent
             ref={textareaRef}
@@ -738,6 +740,20 @@ export function ChatInterfaceBase({
             </InputGroupButtonComponent>
           </InputGroupAddonComponent>
         </InputGroupComponent>
+        {showFooterHelperText && (
+          <div className="w-full flex justify-center mt-2">
+            <span className="text-[10px] text-muted-foreground opacity-70 font-normal text-center">
+              By creating an account you&apos;re agreeing to our{' '}
+              <a href="/terms" className="underline hover:text-foreground">
+                terms
+              </a>
+              {' '}and{' '}
+              <a href="/privacy" className="underline hover:text-foreground">
+                privacy policies
+              </a>
+            </span>
+          </div>
+        )}
       </CardFooterComponent>
     </CardComponent>
   );
