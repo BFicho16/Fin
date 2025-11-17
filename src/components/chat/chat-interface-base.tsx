@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, ReactNode } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, ReactNode } from 'react';
 import { Send, User, Bot } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,50 @@ export function ChatInterfaceBase({
   const previousInitialMessagesRef = useRef<Message[]>(initialMessages);
   const isInitialMountRef = useRef(true);
   const { isKeyboardOpen } = useMobileKeyboard();
+
+  // Log when textarea ref is set and monitor for style changes
+  useEffect(() => {
+    if (textareaRef.current) {
+      console.log('[TEXTAREA] Ref attached on mount', {
+        element: textareaRef.current,
+        initialHeight: textareaRef.current.style.height,
+        initialScrollHeight: textareaRef.current.scrollHeight,
+        initialOffsetHeight: textareaRef.current.offsetHeight,
+        initialClientHeight: textareaRef.current.clientHeight,
+        computedHeight: window.getComputedStyle(textareaRef.current).height,
+        computedMinHeight: window.getComputedStyle(textareaRef.current).minHeight,
+        className: textareaRef.current.className,
+      });
+
+      // Monitor for style attribute changes
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            console.log('[TEXTAREA] Style attribute changed', {
+              newStyle: textareaRef.current?.getAttribute('style'),
+              height: textareaRef.current?.style.height,
+              stackTrace: new Error().stack,
+            });
+          }
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            console.log('[TEXTAREA] Class attribute changed', {
+              newClass: textareaRef.current?.className,
+              height: textareaRef.current?.style.height,
+            });
+          }
+        });
+      });
+
+      observer.observe(textareaRef.current, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+      });
+
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, []);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -132,6 +176,79 @@ export function ChatInterfaceBase({
     }
   }, [initialMessages, messages]);
 
+  // Auto-resize textarea when inputMessage changes
+  useLayoutEffect(() => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      
+      console.log('[TEXTAREA RESIZE] useLayoutEffect triggered', {
+        inputMessageLength: inputMessage.length,
+        inputMessageLines: inputMessage.split('\n').length,
+        inputMessagePreview: inputMessage.substring(0, 50),
+        currentHeight: textarea.style.height,
+        currentScrollHeight: textarea.scrollHeight,
+        currentOffsetHeight: textarea.offsetHeight,
+        currentClientHeight: textarea.clientHeight,
+        computedHeight: window.getComputedStyle(textarea).height,
+        computedMinHeight: window.getComputedStyle(textarea).minHeight,
+        computedMaxHeight: window.getComputedStyle(textarea).maxHeight,
+      });
+      
+      // Reset to auto to get accurate scrollHeight
+      textarea.style.setProperty('height', 'auto', 'important');
+      // Also reset min-height to ensure it doesn't interfere
+      textarea.style.setProperty('min-height', '0px', 'important');
+      // Force a reflow to ensure scrollHeight is accurate
+      void textarea.offsetHeight;
+      
+      // Get the actual scroll height needed for content
+      const scrollHeight = textarea.scrollHeight;
+      const maxHeight = 120;
+      const singleLineHeight = 40;
+      // Calculate new height - always ensure minimum single line height
+      const newHeight = Math.max(singleLineHeight, Math.min(scrollHeight, maxHeight));
+      
+      console.log('[TEXTAREA RESIZE] Calculations', {
+        scrollHeight,
+        maxHeight,
+        singleLineHeight,
+        calculatedNewHeight: newHeight,
+      });
+      
+      // Set both height and min-height explicitly with !important to override CSS
+      textarea.style.setProperty('height', `${newHeight}px`, 'important');
+      textarea.style.setProperty('min-height', `${newHeight}px`, 'important');
+      
+      // Log after setting height
+      requestAnimationFrame(() => {
+        const computed = window.getComputedStyle(textarea);
+        const inputGroup = textarea.closest('[data-slot="input-group"]');
+        console.log('[TEXTAREA RESIZE] After setting height', {
+          styleHeight: textarea.style.height,
+          offsetHeight: textarea.offsetHeight,
+          clientHeight: textarea.clientHeight,
+          scrollHeight: textarea.scrollHeight,
+          computedHeight: computed.height,
+          computedMinHeight: computed.minHeight,
+          computedMaxHeight: computed.maxHeight,
+          computedPadding: computed.padding,
+          computedPaddingTop: computed.paddingTop,
+          computedPaddingBottom: computed.paddingBottom,
+          computedBoxSizing: computed.boxSizing,
+          computedLineHeight: computed.lineHeight,
+          parentHeight: textarea.parentElement?.clientHeight,
+          parentComputedHeight: textarea.parentElement ? window.getComputedStyle(textarea.parentElement).height : null,
+          inputGroupHeight: inputGroup?.clientHeight,
+          inputGroupComputedHeight: inputGroup ? window.getComputedStyle(inputGroup).height : null,
+          inputGroupComputedMinHeight: inputGroup ? window.getComputedStyle(inputGroup).minHeight : null,
+          allClassNames: textarea.className,
+        });
+      });
+    } else {
+      console.log('[TEXTAREA RESIZE] textareaRef.current is null');
+    }
+  }, [inputMessage]);
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
@@ -144,9 +261,10 @@ export function ChatInterfaceBase({
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
-    // Reset textarea height
+    // Reset textarea height - useLayoutEffect will handle this when inputMessage changes
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.setProperty('height', '40px', 'important');
+      textareaRef.current.style.setProperty('min-height', '40px', 'important');
     }
     setIsLoading(true);
 
@@ -572,22 +690,40 @@ export function ChatInterfaceBase({
       </CardContentComponent>
 
       {/* Input */}
-      <CardFooterComponent className="pt-2 flex-shrink-0">
-        <InputGroupComponent className="w-full">
+      <CardFooterComponent className="pt-2 flex-shrink-0 items-start">
+        <InputGroupComponent className="w-full !h-auto flex-col items-stretch">
           <InputGroupTextareaComponent
             ref={textareaRef}
             value={inputMessage}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              console.log('[TEXTAREA] onChange triggered', {
+                newValueLength: e.target.value.length,
+                newValueLines: e.target.value.split('\n').length,
+                currentHeight: e.target.style.height,
+                scrollHeight: e.target.scrollHeight,
+                offsetHeight: e.target.offsetHeight,
+              });
               setInputMessage(e.target.value);
-              // Auto-resize textarea
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              console.log('[TEXTAREA] onKeyDown', {
+                key: e.key,
+                shiftKey: e.shiftKey,
+                targetHeight: (e.target as HTMLTextAreaElement).style.height,
+                targetScrollHeight: (e.target as HTMLTextAreaElement).scrollHeight,
+              });
+              handleKeyDown(e);
+            }}
             placeholder={config.placeholder}
-            rows={1}
             disabled={isLoading}
-            style={{ minHeight: '40px', maxHeight: '120px' }}
+            rows={1}
+            className="!min-h-0 text-sm"
+            style={{ 
+              maxHeight: '120px',
+              overflow: 'hidden',
+              resize: 'none',
+              boxSizing: 'border-box'
+            }}
           />
           <InputGroupAddonComponent align="block-end" className="justify-end">
             <InputGroupButtonComponent
