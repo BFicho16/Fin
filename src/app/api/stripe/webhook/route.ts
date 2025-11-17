@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getStripeClient } from '@/lib/stripe/server';
 import Stripe from 'stripe';
 
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  // Use admin client to bypass RLS - webhooks have no authenticated user session
+  const supabase = createAdminClient();
 
   try {
     switch (event.type) {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
           const planType = priceId === monthlyPriceId ? 'monthly' : 'weekly';
 
           // Update or create subscription record
-          await supabase
+          const { data: upsertData, error: upsertError } = await supabase
             .from('user_subscriptions')
             .upsert({
               user_id: userId,
@@ -66,6 +67,22 @@ export async function POST(request: NextRequest) {
             }, {
               onConflict: 'user_id',
             });
+
+          if (upsertError) {
+            console.error('Error upserting subscription in checkout.session.completed:', {
+              error: upsertError,
+              userId,
+              customerId,
+              subscriptionId,
+              status: subscription.status,
+            });
+          } else {
+            console.log('Successfully updated subscription for checkout.session.completed:', {
+              userId,
+              subscriptionId,
+              status: subscription.status,
+            });
+          }
         }
         break;
       }
@@ -91,7 +108,7 @@ export async function POST(request: NextRequest) {
         const monthlyPriceId = process.env.STRIPE_PRICE_ID_MONTHLY || 'price_1SUWRHA01LapwpJTskRVPyXN';
         const planType = priceId === monthlyPriceId ? 'monthly' : 'weekly';
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             stripe_subscription_id: subscription.id,
@@ -102,6 +119,21 @@ export async function POST(request: NextRequest) {
             cancel_at_period_end: subscription.cancel_at_period_end,
           })
           .eq('user_id', existingSub.user_id);
+
+        if (updateError) {
+          console.error(`Error updating subscription in ${event.type}:`, {
+            error: updateError,
+            userId: existingSub.user_id,
+            subscriptionId: subscription.id,
+            status: subscription.status,
+          });
+        } else {
+          console.log(`Successfully updated subscription in ${event.type}:`, {
+            userId: existingSub.user_id,
+            subscriptionId: subscription.id,
+            status: subscription.status,
+          });
+        }
         break;
       }
 
@@ -109,13 +141,22 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             status: 'canceled',
             stripe_subscription_id: null,
           })
           .eq('stripe_customer_id', customerId);
+
+        if (updateError) {
+          console.error('Error canceling subscription in customer.subscription.deleted:', {
+            error: updateError,
+            customerId,
+          });
+        } else {
+          console.log('Successfully canceled subscription:', { customerId });
+        }
         break;
       }
 
@@ -135,9 +176,12 @@ export async function POST(request: NextRequest) {
           .eq('stripe_customer_id', customerId)
           .single();
 
-        if (!existingSub) break;
+        if (!existingSub) {
+          console.error('No subscription found for invoice.payment_succeeded:', { customerId, subscriptionId });
+          break;
+        }
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
@@ -145,6 +189,21 @@ export async function POST(request: NextRequest) {
             status: subscription.status as any,
           })
           .eq('user_id', existingSub.user_id);
+
+        if (updateError) {
+          console.error('Error updating subscription in invoice.payment_succeeded:', {
+            error: updateError,
+            userId: existingSub.user_id,
+            subscriptionId,
+            status: subscription.status,
+          });
+        } else {
+          console.log('Successfully updated subscription in invoice.payment_succeeded:', {
+            userId: existingSub.user_id,
+            subscriptionId,
+            status: subscription.status,
+          });
+        }
         break;
       }
 
@@ -164,14 +223,30 @@ export async function POST(request: NextRequest) {
           .eq('stripe_customer_id', customerId)
           .single();
 
-        if (!existingSub) break;
+        if (!existingSub) {
+          console.error('No subscription found for invoice.payment_failed:', { customerId, subscriptionId });
+          break;
+        }
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             status: 'past_due',
           })
           .eq('user_id', existingSub.user_id);
+
+        if (updateError) {
+          console.error('Error updating subscription status to past_due:', {
+            error: updateError,
+            userId: existingSub.user_id,
+            subscriptionId,
+          });
+        } else {
+          console.log('Successfully marked subscription as past_due:', {
+            userId: existingSub.user_id,
+            subscriptionId,
+          });
+        }
         break;
       }
 
