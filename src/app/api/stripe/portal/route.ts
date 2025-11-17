@@ -34,7 +34,16 @@ export async function POST(request: NextRequest) {
     const stripe = getStripeClient();
 
     // Create portal session
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Get origin from request headers, with fallback to x-forwarded-host for production behind load balancers
+    let origin = request.headers.get('origin');
+    if (!origin) {
+      const forwardedHost = request.headers.get('x-forwarded-host');
+      if (forwardedHost) {
+        origin = `https://${forwardedHost}`;
+      } else {
+        origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      }
+    }
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
       return_url: `${origin}/`,

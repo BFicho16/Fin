@@ -60,7 +60,7 @@ export const subscriptionRouter = router({
         priceId: priceIdSchema,
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const supabase = await createClient();
       const stripe = getStripeClient();
       
@@ -110,7 +110,8 @@ export const subscriptionRouter = router({
       }
 
       // Create checkout session
-      const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // Use origin from context if available (from request headers), otherwise fall back to env var
+      const origin = ctx.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'subscription',
@@ -130,7 +131,7 @@ export const subscriptionRouter = router({
       return { url: session.url };
     }),
 
-  getCustomerPortalUrl: publicProcedure.mutation(async () => {
+  getCustomerPortalUrl: publicProcedure.mutation(async ({ ctx }) => {
     const supabase = await createClient();
     const stripe = getStripeClient();
     
@@ -158,7 +159,8 @@ export const subscriptionRouter = router({
     }
 
     // Create portal session
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Use origin from context if available (from request headers), otherwise fall back to env var
+    const origin = ctx.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
       return_url: `${origin}/`,

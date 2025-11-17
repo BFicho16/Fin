@@ -39,13 +39,21 @@ function UpgradeModalContent({ userId }: UpgradeModalProps) {
 
   useEffect(() => {
     // Handle success/cancel from Stripe redirect
-    const subscriptionStatus = searchParams.get('subscription');
+    // Check both correct spelling and common typo for defensive programming
+    const subscriptionStatus = searchParams.get('subscription') || searchParams.get('subscribtion');
     if (subscriptionStatus === 'success') {
       showToast({
         title: 'Subscription successful!',
         description: 'Welcome to Fin Pro. Your subscription is now active.',
         variant: 'success',
       });
+      // Clean up the typo parameter if it exists
+      if (searchParams.get('subscribtion')) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('subscribtion');
+        params.set('subscription', 'success');
+        router.replace(`${window.location.pathname}?${params.toString()}`);
+      }
     } else if (subscriptionStatus === 'canceled') {
       showToast({
         title: 'Subscription canceled',
@@ -53,7 +61,7 @@ function UpgradeModalContent({ userId }: UpgradeModalProps) {
         variant: 'default',
       });
     }
-  }, [searchParams, showToast]);
+  }, [searchParams, showToast, router]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
