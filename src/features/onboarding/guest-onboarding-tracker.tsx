@@ -18,7 +18,7 @@ export default function GuestOnboardingTracker({ progressData, onAnalyzeRoutine 
         <div className="p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-2">
             <BedSingle className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Bedtime Routine</h2>
+            <h2 className="text-lg font-semibold">Sleep Routine</h2>
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center overflow-hidden">
