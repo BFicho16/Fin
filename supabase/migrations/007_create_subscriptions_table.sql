@@ -75,3 +75,4 @@ create policy "Users can update their own subscription"
   with check (auth.uid() = user_id);
 
 
+

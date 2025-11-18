@@ -8,3 +8,4 @@ DROP TRIGGER IF EXISTS on_auth_user_created_profile ON auth.users;
 -- Drop the function
 DROP FUNCTION IF EXISTS public.handle_new_user_profile();
 
+

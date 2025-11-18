@@ -100,3 +100,4 @@ The following Stripe events are handled by the webhook handler:
 - `invoice.payment_succeeded` - Updates subscription period dates
 - `invoice.payment_failed` - Marks subscription as past_due
 
+

@@ -13,16 +13,16 @@ function formatSleepRoutineMessage(sleepRoutine: SleepRoutine): string {
   const wakeTime = morning?.wake_time;
   const preBedActivities = night?.pre_bed || [];
 
-  // Build the message parts
-  const parts: string[] = ['I just completed onboarding and wanted to share my sleep routine.'];
+  // Build the message parts - start with instruction to create draft routine
+  const parts: string[] = ['Create a draft routine with these items:'];
 
   // Add bedtime and wake time if available
   if (bedtime && wakeTime) {
-    parts.push(`I typically go to bed at ${bedtime} and wake up at ${wakeTime}.`);
+    parts.push(`Bedtime: ${bedtime}, Wake time: ${wakeTime}`);
   } else if (bedtime) {
-    parts.push(`I typically go to bed at ${bedtime}.`);
+    parts.push(`Bedtime: ${bedtime}`);
   } else if (wakeTime) {
-    parts.push(`I typically wake up at ${wakeTime}.`);
+    parts.push(`Wake time: ${wakeTime}`);
   }
 
   // Add pre-bed activities if available
@@ -40,7 +40,7 @@ function formatSleepRoutineMessage(sleepRoutine: SleepRoutine): string {
       activityText = `${otherActivities.join(', ')}, and ${lastActivity}`;
     }
     
-    parts.push(`Before bed, I usually ${activityText}.`);
+    parts.push(`Pre-bed activities: ${activityText}`);
   }
 
   return parts.join(' ');

@@ -13,3 +13,4 @@ export function isProUser(subscription: SubscriptionRow | null): boolean {
   return subscription.status === 'active' || subscription.status === 'trialing';
 }
 
+
