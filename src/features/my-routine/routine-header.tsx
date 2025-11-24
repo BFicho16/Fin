@@ -1,9 +1,10 @@
 'use client';
 
-import { ClipboardList, RefreshCw } from 'lucide-react';
+import { ClipboardList, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ActiveRoutine, DraftRoutine } from '@/types/routine';
+import { useSheetClose } from '@/components/layouts/chat-page-layout';
 
 export type RoutineView = 'active' | 'draft' | 'add';
 
@@ -13,11 +14,14 @@ interface RoutineHeaderProps {
   isLoading: boolean;
   currentView: RoutineView;
   isEditing?: boolean;
+  isSaving?: boolean;
   onViewChange: (view: RoutineView) => void;
   onEdit?: () => void;
   onActivate?: () => void;
   onClose?: () => void;
   onRefresh?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
 export default function RoutineHeader({
@@ -26,12 +30,16 @@ export default function RoutineHeader({
   isLoading,
   currentView,
   isEditing = false,
+  isSaving = false,
   onViewChange,
   onEdit,
   onActivate,
   onClose,
   onRefresh,
+  onSave,
+  onCancel,
 }: RoutineHeaderProps) {
+  const closeSheet = useSheetClose();
   // Defensive check: Never show draft view if draft is null
   // If currentView is 'draft' but draft is null, treat it as 'active' view
   const effectiveView: RoutineView = currentView === 'draft' && !draft ? 'active' : currentView;
@@ -42,13 +50,13 @@ export default function RoutineHeader({
       return 'My Active Routine';
     }
     if (effectiveView === 'draft') {
-      return 'Draft Routine';
+      return 'Routine';
     }
     return 'Add Your Routine';
   };
 
   const renderButtons = () => {
-    // Add Your Routine view: No buttons
+    // Add Your Routine view: No buttons (mobile close handled separately)
     if (effectiveView === 'add') {
       return null;
     }
@@ -84,9 +92,27 @@ export default function RoutineHeader({
     // Draft Routine view: Show "Activate", "Edit", and "Close" buttons
     // Only show if draft actually exists (defensive check)
     if (effectiveView === 'draft' && draft) {
-      // When editing, don't show buttons in header (they're in the display component)
+      // When editing, show Save and Cancel buttons
       if (isEditing) {
-        return null;
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={onSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        );
       }
       
       return (
@@ -120,6 +146,18 @@ export default function RoutineHeader({
     return null;
   };
 
+  const buttons = !isLoading ? renderButtons() : null;
+  const mobileCloseButton = closeSheet ? (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={closeSheet}
+      className="lg:hidden"
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  ) : null;
+
   return (
     <div className="flex items-center justify-between py-1.5 px-3 border-b h-[44px]">
       <div className="flex items-center space-x-2">
@@ -140,7 +178,10 @@ export default function RoutineHeader({
           </Badge>
         )}
       </div>
-      {!isLoading && renderButtons()}
+      <div className="flex items-center gap-2">
+        {buttons}
+        {mobileCloseButton}
+      </div>
     </div>
   );
 }

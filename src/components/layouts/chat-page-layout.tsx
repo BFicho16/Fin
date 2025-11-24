@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, cloneElement, isValidElement, ReactElement } from 'react';
+import { useState, cloneElement, isValidElement, ReactElement, createContext, useContext } from 'react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Card } from '@/components/ui/card';
 import AuthenticatedChatInterface from '@/components/chat/authenticated-chat-interface';
+
+const SheetCloseContext = createContext<(() => void) | null>(null);
+
+export function useSheetClose() {
+  return useContext(SheetCloseContext);
+}
 
 interface ChatPageLayoutProps {
   contentComponent: React.ReactNode;
@@ -69,9 +75,11 @@ export default function ChatPageLayout({
             className="w-full sm:w-[400px] p-0 transition-all duration-300 h-[100dvh]"
           >
             <SheetTitle className="sr-only">{contentTitle || 'Content'}</SheetTitle>
-            <div className="h-full overflow-y-auto">
-              {contentComponent}
-            </div>
+            <SheetCloseContext.Provider value={() => setIsContentOpen(false)}>
+              <div className="h-full overflow-y-auto">
+                {contentComponent}
+              </div>
+            </SheetCloseContext.Provider>
           </SheetContent>
         </Sheet>
       </div>

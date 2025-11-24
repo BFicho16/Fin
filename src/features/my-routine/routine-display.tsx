@@ -30,12 +30,16 @@ interface RoutineDisplayProps {
   currentView: RoutineView;
   onDraftUpdate?: () => void;
   onEditStateChange?: (isEditing: boolean) => void;
+  onSavingStateChange?: (isSaving: boolean) => void;
 }
 
 export interface RoutineDisplayHandle {
   startEdit: () => void;
   triggerActivate: () => void;
+  handleSave: () => Promise<void>;
+  handleCancel: () => void;
   isEditing: boolean;
+  isSaving: boolean;
 }
 
 const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
@@ -49,6 +53,7 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
       currentView,
       onDraftUpdate,
       onEditStateChange,
+      onSavingStateChange,
     },
     ref
   ) => {
@@ -99,13 +104,24 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
           setShowActivateDialog(true);
         }
       },
+      handleSave: handleSaveEdit,
+      handleCancel: () => {
+        setIsEditing(false);
+        setEditContent('');
+      },
       isEditing,
+      isSaving,
     }));
 
     // Notify parent when edit state changes
     useEffect(() => {
       onEditStateChange?.(isEditing);
     }, [isEditing, onEditStateChange]);
+
+    // Notify parent when saving state changes
+    useEffect(() => {
+      onSavingStateChange?.(isSaving);
+    }, [isSaving, onSavingStateChange]);
 
     // Initialize edit content when entering edit mode (only once, not when draft changes during editing)
     const draftId = draft?.id || '';
@@ -243,40 +259,19 @@ const RoutineDisplay = forwardRef<RoutineDisplayHandle, RoutineDisplayProps>(
     return (
       <div className="flex flex-col">
         {/* Content area */}
-        <div className="p-8">
+        <div className="p-4 lg:p-6">
           {isEditing ? (
             <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                It's easier to chat with your agent to update and create routines
+              </p>
               <Textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-[400px] font-mono text-sm"
+                style={{ minHeight: '50vh', height: '50vh' }}
+                className="w-full font-mono text-sm resize-y"
                 placeholder="Enter your routine in Markdown format..."
               />
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  You can use Markdown formatting. Changes are saved when you click Save.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditContent('');
-                    }}
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveEdit}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="prose prose-sm max-w-none dark:prose-invert">

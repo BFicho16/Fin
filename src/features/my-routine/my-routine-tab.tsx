@@ -28,6 +28,7 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
   const [currentView, setCurrentView] = useState<RoutineView>('active');
   const [hasSetInitialView, setHasSetInitialView] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const displayRef = useRef<RoutineDisplayHandle>(null);
   const prevDraftRef = useRef<any>(null);
 
@@ -129,6 +130,25 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
     setIsEditing(editing);
   }, []);
 
+  // Handle saving state change from RoutineDisplay
+  const handleSavingStateChange = useCallback((saving: boolean) => {
+    setIsSaving(saving);
+  }, []);
+
+  // Handle save button click
+  const handleSave = useCallback(async () => {
+    if (displayRef.current) {
+      await displayRef.current.handleSave();
+    }
+  }, []);
+
+  // Handle cancel button click
+  const handleCancel = useCallback(() => {
+    if (displayRef.current) {
+      displayRef.current.handleCancel();
+    }
+  }, []);
+
   // Handle edit button - trigger edit mode in RoutineDisplay
   const handleEdit = useCallback(() => {
     displayRef.current?.startEdit();
@@ -172,11 +192,14 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
           isLoading={isLoading}
           currentView={currentView}
           isEditing={isEditing}
+          isSaving={isSaving}
           onViewChange={handleViewChange}
           onClose={handleClose}
           onEdit={handleEdit}
           onActivate={handleActivate}
           onRefresh={handleRefresh}
+          onSave={handleSave}
+          onCancel={handleCancel}
         />
       </div>
       <div className="flex-1 overflow-y-auto min-h-0">
@@ -190,6 +213,7 @@ export default function MyRoutineTab({ userId }: MyRoutineTabProps) {
           currentView={currentView}
           onDraftUpdate={handleDraftUpdate}
           onEditStateChange={handleEditStateChange}
+          onSavingStateChange={handleSavingStateChange}
         />
       </div>
     </div>
