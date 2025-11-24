@@ -15,6 +15,7 @@ import {
 import { MessageContent } from './message-content';
 import { useMobileKeyboard } from '@/lib/hooks/use-mobile-keyboard';
 import { Message, ChatConfig } from './types';
+import { ChatUpgradeBar } from './chat-upgrade-bar';
 
 // Type assertion to fix React 19 type conflicts
 const CardComponent = Card as any;
@@ -54,6 +55,7 @@ export function ChatInterfaceBase({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showUpgradeBar, setShowUpgradeBar] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesRef = useRef<Message[]>(initialMessages);
@@ -332,17 +334,8 @@ export function ChatInterfaceBase({
               
               // Handle upgrade-required events
               if (parsed.type === 'upgrade-required') {
-                console.log('[CHAT INTERFACE] Upgrade required event received');
-                if (onUpgradeRequired) {
-                  try {
-                    onUpgradeRequired();
-                    console.log('[CHAT INTERFACE] Upgrade required callback executed');
-                  } catch (error) {
-                    console.error('[CHAT INTERFACE] Error in upgrade required callback:', error);
-                  }
-                } else {
-                  console.warn('[CHAT INTERFACE] Upgrade required event received but no callback provided');
-                }
+                console.log('[CHAT INTERFACE] Upgrade required event received - showing upgrade bar');
+                setShowUpgradeBar(true);
                 // Don't return early - let other processing continue
                 continue;
               }
@@ -693,6 +686,11 @@ export function ChatInterfaceBase({
 
       {/* Input */}
       <CardFooterComponent className="pt-2 flex-shrink-0 items-start flex-col">
+        {showUpgradeBar && (
+          <div className="w-full mb-2">
+            <ChatUpgradeBar />
+          </div>
+        )}
         <InputGroupComponent className="w-full !h-auto flex-col items-stretch">
           <InputGroupTextareaComponent
             ref={textareaRef}

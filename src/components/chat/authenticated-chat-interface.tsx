@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Menu, Calendar } from 'lucide-react';
+import { Menu, ClipboardList } from 'lucide-react';
 import Image from 'next/image';
 import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
@@ -30,7 +30,7 @@ const DropdownMenuContentComponent = DropdownMenuContent as any;
 const DropdownMenuItemComponent = DropdownMenuItem as any;
 const DropdownMenuSeparatorComponent = DropdownMenuSeparator as any;
 const MenuIcon = Menu as any;
-const CalendarIcon = Calendar as any;
+const ClipboardListIcon = ClipboardList as any;
 
 interface AuthenticatedChatInterfaceProps {
   userId: string;
@@ -171,7 +171,7 @@ function AuthenticatedChatInterfaceContent({
           size="sm"
           onClick={handleRoutineClick}
         >
-          <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+          <ClipboardListIcon className="h-3.5 w-3.5 mr-1 text-primary" />
           My Routine
         </ButtonComponent>
         <DropdownMenuComponent>
@@ -232,14 +232,8 @@ function AuthenticatedChatInterfaceContent({
           setCurrentThreadId(`longevity-coach-${userId}`);
         }
       }}
-      onUpgradeRequired={() => {
-        console.log('[AUTH CHAT] Upgrade required - updating query params to open modal');
-        // Update query params without page reload (same pattern as modal uses when closing)
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('upgrade', 'true');
-        const newUrl = `${pathname}?${params.toString()}`;
-        router.replace(newUrl);
-      }}
+      // Upgrade bar is now handled internally by ChatInterfaceBase
+      // No need for onUpgradeRequired callback - the bar will handle opening the modal
     />
   );
 }

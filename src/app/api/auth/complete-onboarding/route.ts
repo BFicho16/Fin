@@ -14,7 +14,7 @@ function formatSleepRoutineMessage(sleepRoutine: SleepRoutine): string {
   const preBedActivities = night?.pre_bed || [];
 
   // Build the message parts - start with instruction to create draft routine
-  const parts: string[] = ['Create a draft routine with these items:'];
+  const parts: string[] = ['Please create a draft routine with these items:'];
 
   // Add bedtime and wake time if available
   if (bedtime && wakeTime) {
