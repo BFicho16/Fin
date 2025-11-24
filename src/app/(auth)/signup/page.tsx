@@ -51,6 +51,17 @@ export default function SignupPage() {
       window.fbq('track', 'Lead');
     }
 
+    // Add user to Loops (non-blocking, silent failure)
+    if (data.user) {
+      fetch('/api/loops/add-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch((error) => {
+        // Silent failure - don't block signup flow
+        console.error('[Signup] Failed to add contact to Loops:', error);
+      });
+    }
+
     if (data.user && guestSessionId) {
       // Migrate guest data
       const migrateRes = await fetch('/api/user/migrate-guest-data', {

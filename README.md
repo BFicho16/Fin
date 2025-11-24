@@ -61,6 +61,9 @@ GOOGLE_GENERATIVE_AI_API_KEY="your-google-gemini-api-key"
 EXA_API_KEY="your-exa-api-key"
 MODEL="gemini-2.5-flash-lite"
 
+# Email Marketing (Loops.so)
+LOOPS_API_KEY="your-loops-api-key"
+
 # Note: GOOGLE_GENERATIVE_AI_API_KEY is used for both text generation and embeddings
 ```
 

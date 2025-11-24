@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { addContactToLoops } from '@/lib/loops';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,6 +101,14 @@ export async function POST(request: NextRequest) {
 
       userId = newUser.user.id;
       console.log('[create-and-signin] New user created with ID:', userId);
+
+      // Add user to Loops (non-blocking, silent failure)
+      if (newUser.user.email) {
+        addContactToLoops(newUser.user.email, userId).catch((error) => {
+          // Silent failure - don't block user creation flow
+          console.error('[create-and-signin] Failed to add contact to Loops:', error);
+        });
+      }
     }
 
     // Generate a magic link for the user (works for both new and existing)
